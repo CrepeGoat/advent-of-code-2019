@@ -45,6 +45,12 @@ fn parse_code_string(output: &mut Vec<usize>, input: &str) {
 			word.push(ch);
 		}
 	}
+	
+	output.push(
+		word.trim().parse::<usize>().expect(
+			"invalid input string"
+		)
+	);
 }
 
 fn print_code(code: &Vec<usize>) {
