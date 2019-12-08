@@ -5,25 +5,28 @@ fn exec_code(code: &mut Vec<usize>) {
 
 	while code_pos < code.len() {
 		let op = code[code_pos];
-		if op == 99usize {
-			break;
+
+		match op {
+			99usize => break,
+			1usize => {
+				let arg1pos = code[code_pos+1];
+				let arg2pos = code[code_pos+2];
+				let respos = code[code_pos+3];
+
+				code[respos] = code[arg1pos] + code[arg2pos];
+				code_pos += 4;
+			},
+			2usize => {
+				let arg1pos = code[code_pos+1];
+				let arg2pos = code[code_pos+2];
+				let respos = code[code_pos+3];
+
+				code[respos] = code[arg1pos] * code[arg2pos];
+				code_pos += 4;
+			},
+			_ => panic!("invalid opcode {:?}", op),
 		}
 
-		let arg1pos = code[code_pos+1];
-		let arg2pos = code[code_pos+2];
-		let respos = code[code_pos+3];
-
-		if op == 1usize {
-			code[respos] = code[arg1pos] + code[arg2pos]
-		}
-		else if op == 2usize {
-			code[respos] = code[arg1pos] * code[arg2pos]
-		}
-		else {
-			panic!("invalid opcode {:?}", op);
-		}
-
-		code_pos += 4;
 	}
 }
 
