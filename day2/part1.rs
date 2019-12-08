@@ -54,7 +54,7 @@ fn parse_code_string(output: &mut Vec<usize>, input: &str) {
 }
 
 fn print_code(code: &Vec<usize>) {
-	let mut iter = code.iter();
+	let iter = code.iter();
 
 	/*match iter.next() {
 		Some(expr) => print!("{:?}", expr),
@@ -69,7 +69,7 @@ fn print_code(code: &Vec<usize>) {
 }
 
 fn main() {
-	println!("hello");
+	println!("Enter program code below:");
 
 	let mut code = Vec::<usize>::new();
 	let mut buffer = String::new();
