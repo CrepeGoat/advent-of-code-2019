@@ -26,8 +26,25 @@ fn exec_code(code: &mut Vec<usize>) {
 			},
 			_ => panic!("invalid opcode {:?}", op),
 		}
-
 	}
+}
+
+fn find_noun_verb(code: &Vec<usize>, expected_result: usize) -> [usize; 2] {
+	for noun in 0usize..=99usize {
+		for verb in 0usize..=99usize {
+			let mut new_code = code.clone();
+			new_code[1] = noun;
+			new_code[2] = verb;
+
+			exec_code(&mut new_code);
+
+			if new_code[0] == expected_result {
+				return [noun, verb];
+			}
+		}
+	}
+
+	panic!("no solution found");
 }
 
 //------------------------------------------------------------------
@@ -73,13 +90,17 @@ fn print_code(code: &Vec<usize>) {
 
 fn main() {
 	println!("Enter program code below:");
-
 	let mut code = Vec::<usize>::new();
 	let mut buffer = String::new();
 	std::io::stdin().read_line(&mut buffer).expect("invalid code");
-	
 	parse_code_string(&mut code, &buffer);
-	exec_code(&mut code);
+	//exec_code(&mut code);
+	buffer.clear();
+	
+	println!("Enter expected result at address 0:");
+	std::io::stdin().read_line(&mut buffer).expect("no expected result found");
+	let expected_result = buffer.trim().parse::<usize>().expect("invalid expected result");
+	let desired_input = find_noun_verb(&code, expected_result);
 
-	print_code(&code);
+	println!("{:?}{:?}", desired_input[0], desired_input[1]);
 }
