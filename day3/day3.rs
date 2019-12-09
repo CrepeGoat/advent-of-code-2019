@@ -4,37 +4,40 @@ use std::vec::Vec;
 //------------------------------------------------------------------
 
 #[derive(Debug, Clone, Copy)]
-enum Direction {
-    Up,
-    Down,
-    Left,
-    Right
+enum Orientation {
+	Horizontal, Vertical,
 }
 
 #[derive(Debug)]
 struct ManhattanMove {
-	direction: Direction,
-	distance: u64,
+	orientation: Orientation,
+	distance: i64,
 }
 
 impl ManhattanMove {
 	fn from_str(s: &str) -> Result<ManhattanMove, &'static str> {
-		let direction = match &s[..1] {
-			"u" | "U" => Some(Direction::Up),
-			"d" | "D" => Some(Direction::Down),
-			"l" | "L" => Some(Direction::Left),
-			"r" | "R" => Some(Direction::Right),
-			_ => None,
-		};
-		let distance = &s[1..].parse::<u64>();
+		let wrapped_dist = &s[1..].parse::<i64>();
+		
+		return match wrapped_dist {
+			Err(_e) => Err("invalid distance"),
+			Ok(abs_dist) => {
+				let orient_str = &s[..1];
+				let dist_vals = match orient_str {
+					"u" | "U" => Some((Orientation::Vertical, *abs_dist)),
+					"d" | "D" => Some((Orientation::Vertical, -*abs_dist)),
+					"l" | "L" => Some((Orientation::Horizontal, -*abs_dist)),
+					"r" | "R" => Some((Orientation::Horizontal, *abs_dist)),
+					_ => None,
+				};
 
-		return match (direction, distance) {
-			(None, _dist) => Err("invalid direction"),
-			(Some(ref _dir), Err(_e)) => Err("invalid distance"),
-			(Some(ref dir), Ok(dist)) => Ok(ManhattanMove {
-				direction: *dir,
-				distance: *dist,
-			}),
+				return match dist_vals {
+					Some((orient, dist)) => Ok(ManhattanMove {
+						orientation: orient,
+						distance: dist,
+					}),
+					None => Err("invalid direction"),
+				};
+			},
 		}
 	}
 }
