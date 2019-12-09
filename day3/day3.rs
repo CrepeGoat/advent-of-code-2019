@@ -1,3 +1,4 @@
+use std::cmp::{min, max};
 use std::vec::Vec;
 
 
@@ -61,6 +62,31 @@ struct Coordinate {
 
 #[derive(Debug)]
 struct LineSegment (Coordinate, Coordinate);
+
+impl LineSegment {
+	pub fn intersection(s1: &LineSegment, s2: &LineSegment)
+	-> Option<LineSegment> {
+		if !(
+			(min(s1.0.x, s1.1.x) <= max(s2.0.x, s2.1.x))
+			& (min(s2.0.x, s2.1.x) <= max(s1.0.x, s1.1.x))
+			& (min(s1.0.y, s1.1.y) <= max(s2.0.y, s2.1.y))
+			& (min(s2.0.y, s2.1.y) <= max(s1.0.y, s1.1.y))
+		) {
+			return None;
+		}
+
+		return Some(LineSegment(
+			Coordinate {
+				x: max(min(s1.0.x, s1.1.x), min(s2.0.x, s2.1.x)),
+				y: max(min(s1.0.y, s1.1.y), min(s2.0.y, s2.1.y)),
+			},
+			Coordinate {
+				x: min(max(s1.0.x, s1.1.x), max(s2.0.x, s2.1.x)),
+				y: min(max(s1.0.y, s1.1.y), max(s2.0.y, s2.1.y)),
+			},
+		));
+	}
+}
 
 fn as_segments(output: &mut Vec<LineSegment>, input: &Vec<ManhattanMove>) {
 	let mut coord0: Coordinate;
