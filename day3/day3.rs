@@ -43,25 +43,12 @@ impl ManhattanMove {
 }
 
 fn parse_sequence(output: &mut Vec<ManhattanMove>, input: &str) {
-	let mut word = String::new();
-
-	for ch in input.chars() {
-		if ch == ',' {
-			output.push(
-				ManhattanMove::from_str(word.trim())
-				.expect("invalid movement string")
-			);
-			word.clear();
-		}
-		else {
-			word.push(ch);
-		}
+	for word in input.split(",") {
+		output.push(
+			ManhattanMove::from_str(word.trim())
+			.expect("invalid movement string")
+		);
 	}
-	
-	output.push(
-		ManhattanMove::from_str(word.trim())
-		.expect("invalid movement string")
-	);
 }
 
 //------------------------------------------------------------------
