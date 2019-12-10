@@ -64,25 +64,46 @@ struct Coordinate {
 struct LineSegment (Coordinate, Coordinate);
 
 impl LineSegment {
+	pub fn xbounds(&self) -> (i64, i64) {
+		if (self.0.x <= self.1.x) {
+			return (self.0.x, self.1.x)
+		} else {
+			return (self.1.x, self.0.x)
+		}
+	}
+
+	pub fn ybounds(&self) -> (i64, i64) {
+		if (self.0.y <= self.1.y) {
+			return (self.0.y, self.1.y)
+		} else {
+			return (self.1.y, self.0.y)
+		}
+	}
+
 	pub fn intersection(s1: &LineSegment, s2: &LineSegment)
 	-> Option<LineSegment> {
+		let s1_xbounds = s1.xbounds();
+		let s1_ybounds = s1.ybounds();
+		let s2_xbounds = s2.xbounds();
+		let s2_ybounds = s2.ybounds();
+
 		if !(
-			(min(s1.0.x, s1.1.x) <= max(s2.0.x, s2.1.x))
-			& (min(s2.0.x, s2.1.x) <= max(s1.0.x, s1.1.x))
-			& (min(s1.0.y, s1.1.y) <= max(s2.0.y, s2.1.y))
-			& (min(s2.0.y, s2.1.y) <= max(s1.0.y, s1.1.y))
+			(s1_xbounds.0 <= s2_xbounds.1)
+			& (s2_xbounds.0 <= s1_xbounds.1)
+			& (s1_ybounds.0 <= s2_ybounds.1)
+			& (s2_ybounds.0 <= s1_ybounds.1)
 		) {
 			return None;
 		}
 
 		return Some(LineSegment(
 			Coordinate {
-				x: max(min(s1.0.x, s1.1.x), min(s2.0.x, s2.1.x)),
-				y: max(min(s1.0.y, s1.1.y), min(s2.0.y, s2.1.y)),
+				x: max(s1_xbounds.0, s2_xbounds.0),
+				y: max(s1_ybounds.0, s2_ybounds.0),
 			},
 			Coordinate {
-				x: min(max(s1.0.x, s1.1.x), max(s2.0.x, s2.1.x)),
-				y: min(max(s1.0.y, s1.1.y), max(s2.0.y, s2.1.y)),
+				x: min(s1_xbounds.1, s2_xbounds.1),
+				y: min(s1_ybounds.1, s2_ybounds.1),
 			},
 		));
 	}
