@@ -54,6 +54,13 @@ fn parse_sequence(output: &mut Vec<ManhattanMove>, input: &str) {
 
 //------------------------------------------------------------------
 
+fn median<T: std::cmp::Ord>(mut n1: T, n2: T, mut n3: T) -> T {
+	if n1 > n3 {
+		std::mem::swap(&mut n1, &mut n3);
+	}
+	return min(max(n1, n2), n3);
+}
+
 #[derive(Debug, Clone, Copy)]
 struct Coordinate {
 	x: i64,
@@ -64,6 +71,12 @@ struct Coordinate {
 struct LineSegment (Coordinate, Coordinate);
 
 impl LineSegment {
+	pub fn min_score(&self) -> i64 {
+		return
+			median(0, self.0.x, self.1.x).abs()
+			+ median(0, self.0.y, self.1.y).abs();
+	}
+
 	pub fn xbounds(&self) -> (i64, i64) {
 		if (self.0.x <= self.1.x) {
 			return (self.0.x, self.1.x)
