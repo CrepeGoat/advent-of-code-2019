@@ -177,22 +177,24 @@ fn find_closest_intersection(
 fn main() {
 	let mut movements = Vec::<ManhattanMove>::new();
 	let mut buffer = String::new();
+
+	let mut read_path = || -> Vec<LineSegment> {
+		let mut path_segments = Vec::<LineSegment>::new();
+		
+		std::io::stdin().read_line(&mut buffer).expect("invalid path");
+		parse_sequence(&mut movements, &buffer);
+		as_segments(&mut path_segments, &movements);
+		movements.clear();
+		buffer.clear();
+
+		path_segments
+	};
 	
 	println!("Enter 1st wire path:");
-	std::io::stdin().read_line(&mut buffer).expect("invalid code");
-	parse_sequence(&mut movements, &buffer);
-	let mut path1_segments = Vec::<LineSegment>::new();
-	as_segments(&mut path1_segments, &movements);
-	movements.clear();
-	buffer.clear();
+	let path1_segments = read_path();
 
 	println!("Enter 2nd wire path:");
-	std::io::stdin().read_line(&mut buffer).expect("invalid code");
-	parse_sequence(&mut movements, &buffer);
-	let mut path2_segments = Vec::<LineSegment>::new();
-	as_segments(&mut path2_segments, &movements);
-	movements.clear();
-	buffer.clear();
+	let path2_segments = read_path();
 
 	let best_intersection = find_closest_intersection(
 		&path1_segments, &path2_segments
