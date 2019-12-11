@@ -1,4 +1,4 @@
-use std::cmp::{min, max};
+use std::cmp::{min, max, Ordering};
 use std::vec::Vec;
 
 
@@ -54,6 +54,20 @@ fn parse_sequence(output: &mut Vec<ManhattanMove>, input: &str) {
 
 //------------------------------------------------------------------
 
+#[derive(Debug, Clone, Copy, Eq)]
+struct Coordinate {
+	x: i64,
+	y: i64,
+}
+
+impl PartialEq for Coordinate {
+    fn eq(&self, other: &Self) -> bool {
+        (self.x == other.x) && (self.y == other.y)
+    }
+}
+
+//------------------------------------------------------------------
+
 fn median<T: std::cmp::Ord>(mut n1: T, n2: T, mut n3: T) -> T {
 	if n1 > n3 {
 		std::mem::swap(&mut n1, &mut n3);
@@ -61,13 +75,7 @@ fn median<T: std::cmp::Ord>(mut n1: T, n2: T, mut n3: T) -> T {
 	return min(max(n1, n2), n3);
 }
 
-#[derive(Debug, Clone, Copy)]
-struct Coordinate {
-	x: i64,
-	y: i64,
-}
-
-#[derive(Debug)]
+#[derive(Debug, Eq)]
 struct LineSegment (Coordinate, Coordinate);
 
 impl LineSegment {
@@ -120,6 +128,27 @@ impl LineSegment {
 			},
 		));
 	}
+}
+
+// resources:
+// https://doc.rust-lang.org/std/collections/binary_heap/
+// https://doc.rust-lang.org/std/cmp/trait.PartialOrd.html#how-can-i-implement-partialord
+impl Ord for LineSegment {
+	fn cmp(&self, other: &Self) -> Ordering {
+		self.min_score().cmp(&other.min_score())
+	}
+}
+
+impl PartialOrd for LineSegment {
+	fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+		Some(self.cmp(&other))
+	}
+}
+
+impl PartialEq for LineSegment {
+    fn eq(&self, other: &Self) -> bool {
+        self.min_score() == other.min_score()
+    }
 }
 
 fn as_segments(output: &mut Vec<LineSegment>, input: &Vec<ManhattanMove>) {
