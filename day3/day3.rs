@@ -78,7 +78,7 @@ impl LineSegment {
 	}
 
 	pub fn xbounds(&self) -> (i64, i64) {
-		if (self.0.x <= self.1.x) {
+		if self.0.x <= self.1.x {
 			return (self.0.x, self.1.x)
 		} else {
 			return (self.1.x, self.0.x)
@@ -86,7 +86,7 @@ impl LineSegment {
 	}
 
 	pub fn ybounds(&self) -> (i64, i64) {
-		if (self.0.y <= self.1.y) {
+		if self.0.y <= self.1.y {
 			return (self.0.y, self.1.y)
 		} else {
 			return (self.1.y, self.0.y)
