@@ -140,21 +140,63 @@ fn as_segments(output: &mut Vec<LineSegment>, input: &Vec<ManhattanMove>) {
 
 //------------------------------------------------------------------
 
+fn find_closest_intersection(
+	path1: &Vec<LineSegment>,
+	path2: &Vec<LineSegment>,
+) -> Option<LineSegment> {
+	let mut best_xing: Option<LineSegment> = None;
+	let mut path_xing: Option<LineSegment>;
+
+	for seg1 in path1.iter() {
+		for seg2 in path2.iter() {
+			path_xing = LineSegment::intersection(seg1, seg2);
+
+			if let Some(segment) = path_xing {
+				if segment.min_score() > 0 {
+					best_xing = match best_xing {
+						None => Some(segment),
+						Some(best_segment) => {
+							if segment.min_score() < best_segment.min_score() {
+								Some(segment)
+							} else {
+								Some(best_segment)
+							}
+						}
+					};
+				}
+			}
+		}
+	}
+
+	return best_xing;
+}
+
+
+//------------------------------------------------------------------
+
 fn main() {
-	println!("Enter wire path:");
 	let mut movements = Vec::<ManhattanMove>::new();
 	let mut buffer = String::new();
+	
+	println!("Enter 1st wire path:");
 	std::io::stdin().read_line(&mut buffer).expect("invalid code");
 	parse_sequence(&mut movements, &buffer);
+	let mut path1_segments = Vec::<LineSegment>::new();
+	as_segments(&mut path1_segments, &movements);
+	movements.clear();
+	buffer.clear();
 
-	for i in movements.iter() {
-		println!("{:?}", i);
-	}
+	println!("Enter 2nd wire path:");
+	std::io::stdin().read_line(&mut buffer).expect("invalid code");
+	parse_sequence(&mut movements, &buffer);
+	let mut path2_segments = Vec::<LineSegment>::new();
+	as_segments(&mut path2_segments, &movements);
+	movements.clear();
+	buffer.clear();
 
-	let mut segments = Vec::<LineSegment>::new();
-	as_segments(&mut segments, &movements);
-
-	for i in segments.iter() {
-		println!("{:?}", i);
-	}
+	let best_intersection = find_closest_intersection(
+		&path1_segments, &path2_segments
+	).unwrap();
+	println!("closest intersection: {:?}", best_intersection);
+	println!("distance: {:?}", best_intersection.min_score());
 }
