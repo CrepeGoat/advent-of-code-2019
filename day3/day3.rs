@@ -1,5 +1,6 @@
 use std::cmp::{min, max, Ordering};
 use std::vec::Vec;
+use std::collections::BinaryHeap;
 
 
 //------------------------------------------------------------------
@@ -135,7 +136,7 @@ impl LineSegment {
 // https://doc.rust-lang.org/std/cmp/trait.PartialOrd.html#how-can-i-implement-partialord
 impl Ord for LineSegment {
 	fn cmp(&self, other: &Self) -> Ordering {
-		self.min_score().cmp(&other.min_score())
+		other.min_score().cmp(&self.min_score())
 	}
 }
 
@@ -169,16 +170,30 @@ fn as_segments(output: &mut Vec<LineSegment>, input: &Vec<ManhattanMove>) {
 
 //------------------------------------------------------------------
 
-fn find_closest_intersection(
-	path1: &Vec<LineSegment>,
-	path2: &Vec<LineSegment>,
-) -> Option<LineSegment> {
+fn find_closest_intersection(path1: Vec<LineSegment>, path2: Vec<LineSegment>)
+-> Option<LineSegment> {
+	let mut ord_path1 = BinaryHeap::from(path1);
+	let mut processed_path1 = Vec::<LineSegment>::new();
+	if let Some(segment) = ord_path1.pop() {
+		processed_path1.push(segment);
+	} else {
+		return None;
+	}
+
+	let mut ord_path2 = BinaryHeap::from(path2);
+	let mut processed_path2 = Vec::<LineSegment>::new();
+	if let Some(segment) = ord_path2.pop() {
+		processed_path2.push(segment);
+	} else {
+		return None;
+	}
+
 	let mut result: Option<LineSegment> = None;
 
-	fn skip_if_suboptimal(
-		segment_opt: Option<LineSegment>,
+	fn skip_if_suboptimal<'a>(
+		segment_opt: Option<&'a LineSegment>,
 		res: &Option<LineSegment>
-	) -> Option<LineSegment> {
+	) -> Option<&'a LineSegment> {
 		match (&segment_opt, &res)  {
 			(_, None) => segment_opt,
 			(None, _) => segment_opt,
@@ -192,19 +207,73 @@ fn find_closest_intersection(
 		}
 	};
 
-	for seg1 in path1.iter() {
-		for seg2 in path2.iter() {
-			if let Some(segment) = skip_if_suboptimal(
-				LineSegment::intersection(seg1, seg2), &result
+	fn literal_skip_if_suboptimal(
+		segment_opt: Option<LineSegment>,
+		res: &Option<LineSegment>
+	) -> Option<LineSegment> {
+		match skip_if_suboptimal(segment_opt.as_ref(), res) {
+			None => None,
+			_ => segment_opt
+		}
+	}
+
+	fn test_xing (
+		segment: LineSegment,
+		segments: &mut Vec<LineSegment>,
+		cross_segments: &Vec<LineSegment>,
+		res: &mut Option<LineSegment>
+	) {
+		let mut x_iter = cross_segments.iter();
+		while let Some(x_segment) = skip_if_suboptimal(x_iter.next(), &res) {
+			if let Some(xing) = literal_skip_if_suboptimal(
+				LineSegment::intersection(&segment, &x_segment), &res
 			) {
-				if segment.min_score() > 0 {
-					result = Some(segment);
+				if xing.min_score() > 0 {
+					*res = Some(xing);
 				}
+			}
+		}
+		segments.push(segment);
+	};
+
+	fn looptest_one_sided(
+		ord_segments: &mut BinaryHeap<LineSegment>,
+		segments: &mut Vec<LineSegment>,
+		cross_segments: &Vec<LineSegment>,
+		res: &mut Option<LineSegment>
+	) {
+		loop {
+			if let Some(segment) = literal_skip_if_suboptimal(ord_segments.pop(), res) {
+				test_xing(segment, segments, cross_segments, res);
+			}
+			else {
+				break;
+			}
+		}
+	};
+
+	loop {
+		let next_seg1 = ord_path1.peek();
+		let next_seg2 = ord_path2.peek();
+		match (
+			skip_if_suboptimal(next_seg1, &result),
+			skip_if_suboptimal(next_seg2, &result)
+		) {
+			(None, None) => break,
+			(Some(_), None) => looptest_one_sided(&mut ord_path1, &mut processed_path1, &processed_path2, &mut result),
+			(None, Some(_)) => looptest_one_sided(&mut ord_path2, &mut processed_path2, &processed_path1, &mut result),
+			(Some(seg1), Some(seg2)) => match seg1.min_score().cmp(&seg2.min_score()) {
+				Ordering::Less => {
+					test_xing(ord_path1.pop().unwrap(), &mut processed_path1, &processed_path2, &mut result);
+				},
+				_ => {
+					test_xing(ord_path2.pop().unwrap(), &mut processed_path1, &processed_path2, &mut result);
+				},
 			}
 		}
 	}
 
-	return result;
+	result
 }
 
 
@@ -233,7 +302,7 @@ fn main() {
 	let path2_segments = read_path();
 
 	let best_intersection = find_closest_intersection(
-		&path1_segments, &path2_segments
+		path1_segments, path2_segments
 	).unwrap();
 	println!("closest intersection: {:?}", best_intersection);
 	println!("distance: {:?}", best_intersection.min_score());
