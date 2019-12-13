@@ -54,42 +54,40 @@ fn parse_sequence(output: &mut Vec<ManhattanMove>, input: &str) {
 
 //------------------------------------------------------------------
 
-fn median<T: std::cmp::Ord>(mut n1: T, n2: T, mut n3: T) -> T {
-	if n1 > n3 {
-		std::mem::swap(&mut n1, &mut n3);
-	}
-	return min(max(n1, n2), n3);
-}
-
 #[derive(Debug, Clone, Copy)]
 struct Coordinate {
 	x: i64,
 	y: i64,
 }
 
+impl Coordinate {
+	fn manhattan_dist(c1: &Coordinate, c2: &Coordinate) -> i64 {
+		return (c1.x - c2.x).abs() + (c1.y - c2.y).abs()
+	}
+}
+
+
 #[derive(Debug)]
-struct LineSegment (Coordinate, Coordinate);
+struct LineSegment {
+	p1: Coordinate,
+	p2: Coordinate,
+	min_score: i64,
+}
 
 impl LineSegment {
-	pub fn min_score(&self) -> i64 {
-		return
-			median(0, self.0.x, self.1.x).abs()
-			+ median(0, self.0.y, self.1.y).abs();
-	}
-
 	pub fn xbounds(&self) -> (i64, i64) {
-		if self.0.x <= self.1.x {
-			return (self.0.x, self.1.x)
+		if self.p1.x <= self.p2.x {
+			return (self.p1.x, self.p2.x)
 		} else {
-			return (self.1.x, self.0.x)
+			return (self.p2.x, self.p1.x)
 		}
 	}
 
 	pub fn ybounds(&self) -> (i64, i64) {
-		if self.0.y <= self.1.y {
-			return (self.0.y, self.1.y)
+		if self.p1.y <= self.p2.y {
+			return (self.p1.y, self.p2.y)
 		} else {
-			return (self.1.y, self.0.y)
+			return (self.p2.y, self.p1.y)
 		}
 	}
 
@@ -109,16 +107,20 @@ impl LineSegment {
 			return None;
 		}
 
-		return Some(LineSegment(
-			Coordinate {
-				x: max(s1_xbounds.0, s2_xbounds.0),
-				y: max(s1_ybounds.0, s2_ybounds.0),
-			},
-			Coordinate {
-				x: min(s1_xbounds.1, s2_xbounds.1),
-				y: min(s1_ybounds.1, s2_ybounds.1),
-			},
-		));
+		let p1 = Coordinate {
+			x: max(s1_xbounds.0, s2_xbounds.0),
+			y: max(s1_ybounds.0, s2_ybounds.0),
+		};
+		let p2 = Coordinate {
+			x: min(s1_xbounds.1, s2_xbounds.1),
+			y: min(s1_ybounds.1, s2_ybounds.1),
+		};
+
+		let score =
+			Coordinate::manhattan_dist(&p1, &s1.p1) + s1.min_score
+			+ Coordinate::manhattan_dist(&p1, &s2.p1) + s2.min_score;
+
+		return Some(LineSegment{p1:p1, p2:p2, min_score: score});
 	}
 }
 
@@ -154,7 +156,7 @@ fn find_closest_intersection(
 			(_, None) => segment_opt,
 			(None, _) => segment_opt,
 			(Some(segment), Some(best_segment)) => {
-				if segment.min_score() < best_segment.min_score() {
+				if segment.min_score < best_segment.min_score {
 					segment_opt
 				} else {
 					None
@@ -168,7 +170,7 @@ fn find_closest_intersection(
 			if let Some(segment) = skip_if_suboptimal(
 				LineSegment::intersection(seg1, seg2), &result
 			) {
-				if segment.min_score() > 0 {
+				if segment.min_score > 0 {
 					result = Some(segment);
 				}
 			}
@@ -207,5 +209,5 @@ fn main() {
 		&path1_segments, &path2_segments
 	).unwrap();
 	println!("closest intersection: {:?}", best_intersection);
-	println!("distance: {:?}", best_intersection.min_score());
+	println!("distance: {:?}", best_intersection.min_score);
 }
