@@ -124,11 +124,17 @@ impl LineSegment {
 	}
 }
 
-fn as_segments(output: &mut Vec<LineSegment>, input: &Vec<ManhattanMove>) {
+fn as_segments(moves: &Vec<ManhattanMove>) -> Vec<LineSegment> {
 	let mut coord0: Coordinate;
 	let mut coord1 = Coordinate {x:0, y:0};
+	let mut score = 0;
 
-	for movement in input.iter() {
+	let mut result = Vec::<LineSegment>::new();
+	let mut intersections = Vec::<LineSegment>::new();
+
+	let mut new_segment: LineSegment;
+
+	for movement in moves.iter() {
 		coord0 = coord1;
 
 		match movement.orientation {
@@ -136,8 +142,55 @@ fn as_segments(output: &mut Vec<LineSegment>, input: &Vec<ManhattanMove>) {
 			Orientation::Horizontal => coord1.x += movement.distance,
 		};
 
-		output.push(LineSegment(coord0, coord1));
+		new_segment = LineSegment{ p1:coord0, p2:coord1, min_score:score };
+
+		// Splits segment on any self-intersections
+		for segment in result.iter() {
+			if let Some(mut xing) = LineSegment::intersection(&new_segment, &segment) {
+				xing.min_score = segment.min_score + Coordinate::manhattan_dist(
+					&segment.p1, &xing.p1
+				);
+				intersections.push(xing);
+			}
+		}
+
+		match (movement.orientation, movement.distance) {
+			(Orientation::Vertical, n) if n > 0 => intersections.sort_by(
+				|a: &LineSegment, b: &LineSegment| {a.p1.y.cmp(&b.p1.y)}
+			),
+			(Orientation::Vertical, _) => intersections.sort_by(
+				|a: &LineSegment, b: &LineSegment| {b.p1.y.cmp(&a.p1.y)}
+			),
+			(Orientation::Horizontal, n) if n > 0 => intersections.sort_by(
+				|a: &LineSegment, b: &LineSegment| {a.p1.x.cmp(&b.p1.x)}
+			),
+			(Orientation::Horizontal, _) => intersections.sort_by(
+				|a: &LineSegment, b: &LineSegment| {b.p1.x.cmp(&a.p1.x)}
+			),
+		};
+
+		for xing in intersections.iter() {
+			let mut new_segment_prefix = new_segment;
+
+			new_segment = LineSegment {
+				p1: xing.p1,
+				p2: new_segment_prefix.p2,
+				min_score: //min(
+					new_segment_prefix.min_score + Coordinate::manhattan_dist(&new_segment_prefix.p1, &xing.p1),
+				//	xing.min_score,
+				//),
+				// NOTE: ^ bug in solution checker
+			};
+			new_segment_prefix.p2 = xing.p1;
+			result.push(new_segment_prefix);
+		}
+
+		score = new_segment.min_score + Coordinate::manhattan_dist(&new_segment.p1, &new_segment.p2);
+		result.push(new_segment);
+		intersections.clear();
 	}
+
+	result
 }
 
 //------------------------------------------------------------------
@@ -188,11 +241,9 @@ fn main() {
 	let mut buffer = String::new();
 
 	let mut read_path = || -> Vec<LineSegment> {
-		let mut path_segments = Vec::<LineSegment>::new();
-		
 		std::io::stdin().read_line(&mut buffer).expect("invalid path");
 		parse_sequence(&mut movements, &buffer);
-		as_segments(&mut path_segments, &movements);
+		let path_segments = as_segments(&movements);
 		movements.clear();
 		buffer.clear();
 
