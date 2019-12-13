@@ -144,31 +144,38 @@ fn find_closest_intersection(
 	path1: &Vec<LineSegment>,
 	path2: &Vec<LineSegment>,
 ) -> Option<LineSegment> {
-	let mut best_xing: Option<LineSegment> = None;
-	let mut path_xing: Option<LineSegment>;
+	let mut result: Option<LineSegment> = None;
+
+	fn skip_if_suboptimal(
+		segment_opt: Option<LineSegment>,
+		res: &Option<LineSegment>
+	) -> Option<LineSegment> {
+		match (&segment_opt, &res)  {
+			(_, None) => segment_opt,
+			(None, _) => segment_opt,
+			(Some(segment), Some(best_segment)) => {
+				if segment.min_score() < best_segment.min_score() {
+					segment_opt
+				} else {
+					None
+				}
+			}
+		}
+	};
 
 	for seg1 in path1.iter() {
 		for seg2 in path2.iter() {
-			path_xing = LineSegment::intersection(seg1, seg2);
-
-			if let Some(segment) = path_xing {
+			if let Some(segment) = skip_if_suboptimal(
+				LineSegment::intersection(seg1, seg2), &result
+			) {
 				if segment.min_score() > 0 {
-					best_xing = match best_xing {
-						None => Some(segment),
-						Some(best_segment) => {
-							if segment.min_score() < best_segment.min_score() {
-								Some(segment)
-							} else {
-								Some(best_segment)
-							}
-						}
-					};
+					result = Some(segment);
 				}
 			}
 		}
 	}
 
-	return best_xing;
+	return result;
 }
 
 
@@ -177,22 +184,24 @@ fn find_closest_intersection(
 fn main() {
 	let mut movements = Vec::<ManhattanMove>::new();
 	let mut buffer = String::new();
+
+	let mut read_path = || -> Vec<LineSegment> {
+		let mut path_segments = Vec::<LineSegment>::new();
+		
+		std::io::stdin().read_line(&mut buffer).expect("invalid path");
+		parse_sequence(&mut movements, &buffer);
+		as_segments(&mut path_segments, &movements);
+		movements.clear();
+		buffer.clear();
+
+		path_segments
+	};
 	
 	println!("Enter 1st wire path:");
-	std::io::stdin().read_line(&mut buffer).expect("invalid code");
-	parse_sequence(&mut movements, &buffer);
-	let mut path1_segments = Vec::<LineSegment>::new();
-	as_segments(&mut path1_segments, &movements);
-	movements.clear();
-	buffer.clear();
+	let path1_segments = read_path();
 
 	println!("Enter 2nd wire path:");
-	std::io::stdin().read_line(&mut buffer).expect("invalid code");
-	parse_sequence(&mut movements, &buffer);
-	let mut path2_segments = Vec::<LineSegment>::new();
-	as_segments(&mut path2_segments, &movements);
-	movements.clear();
-	buffer.clear();
+	let path2_segments = read_path();
 
 	let best_intersection = find_closest_intersection(
 		&path1_segments, &path2_segments
