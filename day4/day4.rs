@@ -64,6 +64,35 @@ fn count_passwords<T: std::iter::Iterator<Item=u32>>(iter: T) -> u32 {
 	iter.map(|x| u32::from(is_valid_password(x))).sum()
 }
 
+//-----------------------------------------------------------------------------
+
+fn is_valid_password2(value: u32) -> bool {
+	let digits = SixDigits::new(value);
+	let mut has_repeat = false;
+	let mut repeat_streak = 1;
+	for i in 0..5 {
+		match digits.digit(i).cmp(&digits.digit(i+1)) {
+			Ordering::Less => {
+				return false;
+			},
+			Ordering::Equal => {
+				repeat_streak += 1;
+			},
+			Ordering::Greater => {
+				has_repeat |= repeat_streak == 2;
+				repeat_streak = 1;
+			},
+		};
+	}
+	return has_repeat | (repeat_streak == 2);
+}
+
+
+fn count_passwords2<T: std::iter::Iterator<Item=u32>>(iter: T) -> u32 {
+	iter.map(|x| u32::from(is_valid_password2(x))).sum()
+}
+
+//-----------------------------------------------------------------------------
 
 fn main() {
 	let mut buffer = String::new();
@@ -77,5 +106,5 @@ fn main() {
 	}
 	println!("");
 
-	println!("valid passwords in range: {:?}", count_passwords(range));
+	println!("valid passwords in range: {:?}", count_passwords2(range));
 }
