@@ -1,4 +1,5 @@
 use std::convert::TryFrom;
+use std::ops::RangeInclusive;
 
 
 #[derive(Debug, Clone, Copy)]
@@ -22,7 +23,7 @@ impl SixDigits {
 }
 
 
-fn parse_range_pair(input: &str) -> Result<(SixDigits, SixDigits), &str>
+fn parse_range(input: &str) -> Result<RangeInclusive<u32>, &str>
 {
 	let mut num_str_iter = input.split("-");
 	let r1 = num_str_iter.next();
@@ -33,7 +34,7 @@ fn parse_range_pair(input: &str) -> Result<(SixDigits, SixDigits), &str>
 			str1.trim().parse::<u32>(),
 			str2.trim().parse::<u32>()
 		) {
-			Ok((SixDigits::new(val1), SixDigits::new(val2)))
+			Ok(RangeInclusive::new(val1, val2))
 		} else {
 			Err("invalid numbers present")
 		}
@@ -47,11 +48,11 @@ fn main() {
 	let mut buffer = String::new();
 	println!("Enter range pair:");
 	std::io::stdin().read_line(&mut buffer).expect("stdin error");
-	let range_pair = parse_range_pair(&buffer).expect("invalid range pair");
+	let range = parse_range(&buffer).expect("invalid range pair");
 
-	println!("{:?}", range_pair);
+	println!("{:?}", range);
 	for i in 0..6 {
-		print!("{}", range_pair.0.digit(i).unwrap());
+		print!("{}", SixDigits::new(*range.start()).digit(i).unwrap());
 	}
 	println!("");
 }
