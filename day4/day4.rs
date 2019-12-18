@@ -69,14 +69,22 @@ fn count_passwords<T: std::iter::Iterator<Item=u32>>(iter: T) -> u32 {
 fn is_valid_password2(value: u32) -> bool {
 	let digits = SixDigits::new(value);
 	let mut has_repeat = false;
+	let mut repeat_streak = 1;
 	for i in 0..5 {
 		match digits.digit(i).cmp(&digits.digit(i+1)) {
-			Ordering::Less => return false,
-			Ordering::Equal => has_repeat = true,
-			_ => (),
+			Ordering::Less => {
+				return false;
+			},
+			Ordering::Equal => {
+				repeat_streak += 1;
+			},
+			Ordering::Greater => {
+				has_repeat |= repeat_streak == 2;
+				repeat_streak = 1;
+			},
 		};
 	}
-	return has_repeat;
+	return has_repeat | (repeat_streak == 2);
 }
 
 
