@@ -1,5 +1,25 @@
+use std::convert::TryFrom;
+
+
 #[derive(Debug, Clone, Copy)]
 struct SixDigits(u32);
+
+impl SixDigits {
+	fn new(value: u32) -> SixDigits {
+		assert!((0..10_u32.pow(6)).contains(&value));
+		SixDigits(value)
+	}
+
+	fn digit(&self, idx: usize) -> Result<u8, String> {
+		if idx < 6 {
+			Ok(u8::try_from(
+				(self.0 / 10_u32.pow(u32::try_from(idx).unwrap())) % 10
+			).unwrap())
+		} else {
+			Err(String::from("index out of bounds"))
+		}
+	}
+}
 
 
 fn parse_range_pair(input: &str) -> Result<(SixDigits, SixDigits), &str>
@@ -13,7 +33,7 @@ fn parse_range_pair(input: &str) -> Result<(SixDigits, SixDigits), &str>
 			str1.trim().parse::<u32>(),
 			str2.trim().parse::<u32>()
 		) {
-			Ok((SixDigits(val1), SixDigits(val2)))
+			Ok((SixDigits::new(val1), SixDigits::new(val2)))
 		} else {
 			Err("invalid numbers present")
 		}
@@ -30,4 +50,8 @@ fn main() {
 	let range_pair = parse_range_pair(&buffer).expect("invalid range pair");
 
 	println!("{:?}", range_pair);
+	for i in 0..6 {
+		print!("{}", range_pair.0.digit(i).unwrap());
+	}
+	println!("");
 }
