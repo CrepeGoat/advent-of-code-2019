@@ -1,4 +1,5 @@
-use std::convert::TryFrom;
+use std::convert::{From, TryFrom};
+use std::cmp::Ordering;
 use std::ops::RangeInclusive;
 
 
@@ -43,6 +44,26 @@ fn parse_range(input: &str) -> Result<RangeInclusive<u32>, &str>
 	}
 }
 
+//-----------------------------------------------------------------------------
+
+fn is_valid_password(value: u32) -> bool {
+	let digits = SixDigits::new(value);
+	let mut has_repeat = false;
+	for i in 0..5 {
+		match digits.digit(i).cmp(&digits.digit(i+1)) {
+			Ordering::Less => return false,
+			Ordering::Equal => has_repeat = true,
+			_ => (),
+		};
+	}
+	return has_repeat;
+}
+
+
+fn count_passwords<T: std::iter::Iterator<Item=u32>>(iter: T) -> u32 {
+	iter.map(|x| u32::from(is_valid_password(x))).sum()
+}
+
 
 fn main() {
 	let mut buffer = String::new();
@@ -55,4 +76,6 @@ fn main() {
 		print!("{}", SixDigits::new(*range.start()).digit(i).unwrap());
 	}
 	println!("");
+
+	println!("valid passwords in range: {:?}", count_passwords(range));
 }
