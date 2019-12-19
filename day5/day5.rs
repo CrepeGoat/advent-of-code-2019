@@ -1,5 +1,26 @@
 use std::vec::Vec;
 
+
+#[derive(Debug, Clone, Copy)]
+struct SixDigits(u32);
+
+impl SixDigits {
+	fn new(value: u32) -> SixDigits {
+		assert!((0..10_u32.pow(6)).contains(&value));
+		SixDigits(value)
+	}
+
+	fn digit(&self, idx: usize) -> Result<u8, String> {
+		if idx < 6 {
+			Ok(u8::try_from(
+				(self.0 / 10_u32.pow(u32::try_from(idx).unwrap())) % 10
+			).unwrap())
+		} else {
+			Err(String::from("index out of bounds"))
+		}
+	}
+}
+
 fn exec_code(code: &mut Vec<usize>) {
 	let mut code_pos = 0usize;
 
