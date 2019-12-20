@@ -50,27 +50,9 @@ fn find_noun_verb(code: &Vec<usize>, expected_result: usize) -> [usize; 2] {
 //------------------------------------------------------------------
 
 fn parse_code_string(output: &mut Vec<usize>, input: &str) {
-	let mut word = String::new();
-
-	for ch in input.chars() {
-		if ch == ',' {
-			output.push(
-				word.trim().parse::<usize>().expect(
-					"invalid input string"
-				)
-			);
-			word.clear();
-		}
-		else {
-			word.push(ch);
-		}
+	for word in input.split(",") {
+		output.push(word.trim().parse::<usize>().expect("invalid input string"));
 	}
-	
-	output.push(
-		word.trim().parse::<usize>().expect(
-			"invalid input string"
-		)
-	);
 }
 
 fn print_code(code: &Vec<usize>) {
