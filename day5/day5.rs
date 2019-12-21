@@ -32,9 +32,9 @@ impl Digits {
 
 //-----------------------------------------------------------------------------
 
-fn parse_code_string(output: &mut Vec<u32>, input: &str) {
+fn parse_code_string(output: &mut Vec<i32>, input: &str) {
 	for word in input.split(",") {
-		output.push(word.trim().parse::<u32>().expect("invalid input string"));
+		output.push(word.trim().parse::<i32>().expect("invalid input string"));
 	}
 }
 
