@@ -136,31 +136,63 @@ impl OpInstruction {
 	}
 }
 
-fn exec_code(code: &mut Vec<usize>) {
-	let mut code_pos = 0usize;
+fn exec_code(program: &mut Vec<i32>) {
+	let mut pos = 0usize;
 
-	while code_pos < code.len() {
-		let op = code[code_pos];
+	while pos < program.len() {
+		let op_modes = Digits(program[pos].try_into().unwrap());
 
-		match op {
-			99usize => break,
-			1usize => {
-				let arg1pos = code[code_pos+1];
-				let arg2pos = code[code_pos+2];
-				let respos = code[code_pos+3];
+		match OpInstruction::from_opcode(op_modes.digits(..2)).unwrap() {
+			OpInstruction::Add => {
+				*ParameterMutRef
+					::from_pos_mode(pos+3, op_modes.digits(4..5)).unwrap()
+					.deref(program).unwrap()
+				= ParameterRef
+					::from_pos_mode(pos+1, op_modes.digits(2..3)).unwrap()
+					.deref(program).unwrap()
+				+ ParameterRef
+					::from_pos_mode(pos+2, op_modes.digits(3..4)).unwrap()
+					.deref(program).unwrap();
 
-				code[respos] = code[arg1pos] + code[arg2pos];
-				code_pos += 4;
-			},
-			2usize => {
-				let arg1pos = code[code_pos+1];
-				let arg2pos = code[code_pos+2];
-				let respos = code[code_pos+3];
+				pos += 4;
+			}
+			OpInstruction::Multiply => {
+				*ParameterMutRef
+					::from_pos_mode(pos+3, op_modes.digits(4..5)).unwrap()
+					.deref(program).unwrap()
+				= ParameterRef
+					::from_pos_mode(pos+1, op_modes.digits(2..3)).unwrap()
+					.deref(program).unwrap()
+				* ParameterRef
+					::from_pos_mode(pos+2, op_modes.digits(3..4)).unwrap()
+					.deref(program).unwrap();
 
-				code[respos] = code[arg1pos] * code[arg2pos];
-				code_pos += 4;
-			},
-			_ => panic!("invalid opcode {:?}", op),
+				pos += 4;
+			}
+			OpInstruction::Input => {
+				println!("Enter in an input value");
+				let mut buffer = String::new();
+				std::io::stdin().read_line(&mut buffer).expect("invalid code");
+				let input_value = buffer.trim().parse::<i32>().expect(
+					"invalid input string"
+				);
+
+				*ParameterMutRef
+					::from_pos_mode(pos+1, op_modes.digits(2..3)).unwrap()
+					.deref(program).unwrap()
+				= input_value;
+
+				pos += 2;
+			}
+			OpInstruction::Output => {
+				let output_value = ParameterRef
+					::from_pos_mode(pos+1, op_modes.digits(2..3)).unwrap()
+					.deref(program).unwrap();
+				println!("{:?}", output_value);
+
+				pos += 2;
+			}
+			OpInstruction::Terminate => break,
 		}
 	}
 }
