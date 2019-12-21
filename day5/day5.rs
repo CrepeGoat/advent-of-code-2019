@@ -4,14 +4,10 @@ use std::vec::Vec;
 
 
 #[derive(Debug, Clone, Copy)]
-struct Digits(u32, u8);
+struct Digits(u32);
 
 impl Digits {
-	fn new(value: u32, no_digits: u8) -> Digits {
-		assert!(no_digits <= 18);  // = floor(log_10(2^64))
-		assert!((0..10_u32.pow(no_digits.into())).contains(&value));
-		Digits(value, no_digits)
-	}
+	const NO_OF_DIGITS: u8 = 9;
 
 	fn digits<R: RangeBounds<u8>>(&self, index: R) -> u32 {
 		let lbound = match index.start_bound() {
@@ -20,9 +16,9 @@ impl Digits {
 			Excluded(&n) => n+1
 		};
 		let ubound = match index.end_bound() {
-			Unbounded => self.1,
-			Included(&n) => min(self.1, n+1),
-			Excluded(&n) => min(self.1, n),
+			Unbounded => Self::NO_OF_DIGITS,
+			Included(&n) => min(Self::NO_OF_DIGITS, n+1),
+			Excluded(&n) => min(Self::NO_OF_DIGITS, n),
 		};
 
 		if lbound >= ubound {
@@ -108,7 +104,7 @@ fn print_code(code: &Vec<usize>) {
 }
 
 fn main() {
-	let d = Digits::new(123456780, 9);
+	let d = Digits(123456780);
 
 	println!("{:?}", d.digits(1..=2))
 
