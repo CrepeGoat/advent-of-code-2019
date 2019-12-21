@@ -1,3 +1,4 @@
+use std::convert::{TryFrom, TryInto};
 use std::cmp::min;
 use std::ops::{RangeBounds, Bound::*};
 use std::vec::Vec;
@@ -39,6 +40,101 @@ fn parse_code_string(output: &mut Vec<i32>, input: &str) {
 }
 
 //-----------------------------------------------------------------------------
+
+#[derive(Debug)]
+enum ParameterRef {
+	Position(usize),
+	Immediate(usize),
+}
+
+impl ParameterRef {
+	fn from_pos_mode(pos: usize, mode: u32) -> Result<ParameterRef, String> {
+		match mode {
+			0 => Ok(Self::Position(pos)),
+			1 => Ok(Self::Immediate(pos)),
+			m => Err(format!("invalid parameter mode {:?}", m))
+		}
+	}
+	fn deref<'a>(&self, program: &'a Vec<i32>) -> Result<&'a i32, String> {
+		
+		fn get_ref_value<'b>(program: &'b Vec<i32>, pos: usize, err: &str)
+		-> Result<&'b i32, String> {
+			program.get(pos).ok_or(format!("{:?} {:?}", err, pos))
+		}
+
+		match self {
+			Self::Immediate(pos) => get_ref_value(
+				program, *pos, 
+				"invalid program position"
+			),
+			Self::Position(pos) => {
+				if let Ok(pos_val) = usize::try_from(*get_ref_value(
+					program, *pos,
+					"invalid program position"
+				)?) {
+					get_ref_value(
+						program, pos_val,
+						"invalid position parameter"
+					)					
+				} else {
+					panic!("program integer cannot be converted to position pointer")
+				}
+			},
+		}
+	}	
+}
+
+#[derive(Debug)]
+enum ParameterMutRef {
+	Position(usize),
+}
+
+impl ParameterMutRef {
+	fn from_pos_mode(pos: usize, mode: u32) -> Result<ParameterMutRef, String> {
+		match mode {
+			0 => Ok(Self::Position(pos)),
+			1 => Err("cannot mutably access a parameter in immediate mode".to_string()),
+			m => Err(format!("invalid parameter mode {:?}", m))
+		}
+	}
+	fn deref<'a>(&self, program: &'a mut Vec<i32>) -> Result<&'a mut i32, String> {
+		let Self::Position(pos) = self;
+
+		if let Ok(pos_val) = usize::try_from(*program.get(*pos).ok_or(
+			format!("invalid program position {:?}", pos)
+		)?) {
+			program.get_mut(pos_val).ok_or(
+				format!("invalid position parameter {:?}", pos_val)
+			)
+		} else {
+			panic!("program integer cannot be converted to position pointer")
+		}
+	}	
+}
+
+
+#[derive(Debug)]
+enum OpInstruction {
+	Add,
+	Multiply,
+	Input,
+	Output,
+
+	Terminate,
+}
+
+impl OpInstruction {
+	fn from_opcode(opcode: u32) -> Result<OpInstruction, String> {
+		match opcode {
+			99u32 => Ok(Self::Terminate),
+			1u32 => Ok(Self::Add),
+			2u32 => Ok(Self::Multiply),
+			3u32 => Ok(Self::Input),
+			4u32 => Ok(Self::Output),
+			n => Err(format!("invalid opcode '{:?}'", n))
+		}
+	}
+}
 
 fn exec_code(code: &mut Vec<usize>) {
 	let mut code_pos = 0usize;
