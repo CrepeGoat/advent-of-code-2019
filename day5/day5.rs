@@ -36,6 +36,14 @@ impl Digits {
 
 //-----------------------------------------------------------------------------
 
+fn parse_code_string(output: &mut Vec<u32>, input: &str) {
+	for word in input.split(",") {
+		output.push(word.trim().parse::<u32>().expect("invalid input string"));
+	}
+}
+
+//-----------------------------------------------------------------------------
+
 fn exec_code(code: &mut Vec<usize>) {
 	let mut code_pos = 0usize;
 
@@ -84,31 +92,6 @@ fn find_noun_verb(code: &Vec<usize>, expected_result: usize) -> [usize; 2] {
 }
 
 //------------------------------------------------------------------
-
-fn parse_code_string(output: &mut Vec<usize>, input: &str) {
-	let mut word = String::new();
-
-	for ch in input.chars() {
-		if ch == ',' {
-			output.push(
-				word.trim().parse::<usize>().expect(
-					"invalid input string"
-				)
-			);
-			word.clear();
-		}
-		else {
-			word.push(ch);
-		}
-	}
-	
-	output.push(
-		word.trim().parse::<usize>().expect(
-			"invalid input string"
-		)
-	);
-}
-
 fn print_code(code: &Vec<usize>) {
 	let iter = code.iter();
 
