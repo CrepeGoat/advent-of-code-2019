@@ -198,7 +198,7 @@ fn exec_code(program: &mut Vec<i32>) {
 }
 
 //------------------------------------------------------------------
-fn print_code(code: &Vec<usize>) {
+fn print_code(code: &Vec<i32>) {
 	let iter = code.iter();
 
 	for ch in iter {
