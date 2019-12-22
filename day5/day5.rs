@@ -209,24 +209,12 @@ fn print_code(code: &Vec<i32>) {
 }
 
 fn main() {
-	let d = Digits(123456780);
-
-	println!("{:?}", d.digits(1..=2))
-
-	/*
 	println!("Enter program code below:");
-	let mut code = Vec::<usize>::new();
+	let mut program = Vec::<i32>::new();
 	let mut buffer = String::new();
-	std::io::stdin().read_line(&mut buffer).expect("invalid code");
-	parse_code_string(&mut code, &buffer);
-	//exec_code(&mut code);
+	std::io::stdin().read_line(&mut buffer).expect("invalid program");
+	parse_code_string(&mut program, &buffer);
 	buffer.clear();
 	
-	println!("Enter expected result at address 0:");
-	std::io::stdin().read_line(&mut buffer).expect("no expected result found");
-	let expected_result = buffer.trim().parse::<usize>().expect("invalid expected result");
-	let desired_input = find_noun_verb(&code, expected_result);
-
-	println!("{:?}{:?}", desired_input[0], desired_input[1]);
-	*/
+	exec_code(&mut program);
 }
