@@ -197,33 +197,10 @@ fn exec_code(program: &mut Vec<i32>) {
 	}
 }
 
-fn find_noun_verb(code: &Vec<usize>, expected_result: usize) -> [usize; 2] {
-	for noun in 0usize..=99usize {
-		for verb in 0usize..=99usize {
-			let mut new_code = code.clone();
-			new_code[1] = noun;
-			new_code[2] = verb;
-
-			exec_code(&mut new_code);
-
-			if new_code[0] == expected_result {
-				return [noun, verb];
-			}
-		}
-	}
-
-	panic!("no solution found");
-}
-
 //------------------------------------------------------------------
 fn print_code(code: &Vec<usize>) {
 	let iter = code.iter();
 
-	/*match iter.next() {
-		Some(expr) => print!("{:?}", expr),
-		None => {},
-	}
-	*/
 	for ch in iter {
 		print!("{:?},", ch);
 	}
