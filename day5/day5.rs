@@ -5,12 +5,18 @@ use std::vec::Vec;
 
 
 #[derive(Debug, Clone, Copy)]
-struct Digits(u32);
+struct Digits {
+	value: u32
+}
 
 impl Digits {
 	const NO_OF_DIGITS: u8 = 9;
 
-	fn digits<R: RangeBounds<u8>>(&self, index: R) -> u32 {
+	fn new(value: u32) -> Self {
+		Digits{value: value}
+	}
+
+	fn subdigits<R: RangeBounds<u8>>(&self, index: R) -> Digits {
 		let lbound = match index.start_bound() {
 			Unbounded => 0,
 			Included(&n) => n,
@@ -22,12 +28,14 @@ impl Digits {
 			Excluded(&n) => min(Self::NO_OF_DIGITS, n),
 		};
 
-		if lbound >= ubound {
-			0_u32
-		} else {
-			(self.0 / 10_u32.pow(lbound.into()))
-			% 10_u32.pow((ubound-lbound).into())
-		}
+		Digits::new(
+			if lbound >= ubound {
+				0_u32
+			} else {
+				(self.value / 10_u32.pow(lbound.into()))
+				% 10_u32.pow((ubound-lbound).into())
+			}
+		)
 	}
 }
 
@@ -136,36 +144,50 @@ impl OpInstruction {
 	}
 }
 
+//-----------------------------------------------------------------------------
+
+fn get_param_ref<'a>(
+	program: &'a Vec<i32>, pos: usize, modes: Digits, offset: u8
+) -> &'a i32 {
+	ParameterRef
+	::from_pos_mode(
+		pos+1+usize::from(offset),
+		modes.subdigits(2+offset..3+offset).value
+	).unwrap()
+	.deref(program).unwrap()
+}
+
+fn get_param_mutref<'a>(
+	program: &'a mut Vec<i32>, pos: usize, modes: Digits, offset: u8
+) -> &'a mut i32 {
+	ParameterMutRef
+	::from_pos_mode(
+		pos+1+usize::from(offset),
+		modes.subdigits(2+offset..3+offset).value
+	).unwrap()
+	.deref(program).unwrap()
+}
+
+//-----------------------------------------------------------------------------
+
 fn exec_code(program: &mut Vec<i32>) {
 	let mut pos = 0usize;
 
 	while pos < program.len() {
-		let op_modes = Digits(program[pos].try_into().unwrap());
+		let op_modes = Digits::new(program[pos].try_into().unwrap());
 
-		match OpInstruction::from_opcode(op_modes.digits(..2)).unwrap() {
+		match OpInstruction::from_opcode(op_modes.subdigits(..2).value).unwrap() {
 			OpInstruction::Add => {
-				*ParameterMutRef
-					::from_pos_mode(pos+3, op_modes.digits(4..5)).unwrap()
-					.deref(program).unwrap()
-				= ParameterRef
-					::from_pos_mode(pos+1, op_modes.digits(2..3)).unwrap()
-					.deref(program).unwrap()
-				+ ParameterRef
-					::from_pos_mode(pos+2, op_modes.digits(3..4)).unwrap()
-					.deref(program).unwrap();
+				*get_param_mutref(program, pos, op_modes, 2)
+				= get_param_ref(program, pos, op_modes, 0)
+				+ get_param_ref(program, pos, op_modes, 1);
 
 				pos += 4;
 			}
 			OpInstruction::Multiply => {
-				*ParameterMutRef
-					::from_pos_mode(pos+3, op_modes.digits(4..5)).unwrap()
-					.deref(program).unwrap()
-				= ParameterRef
-					::from_pos_mode(pos+1, op_modes.digits(2..3)).unwrap()
-					.deref(program).unwrap()
-				* ParameterRef
-					::from_pos_mode(pos+2, op_modes.digits(3..4)).unwrap()
-					.deref(program).unwrap();
+				*get_param_mutref(program, pos, op_modes, 2)
+				= get_param_ref(program, pos, op_modes, 0)
+				* get_param_ref(program, pos, op_modes, 1);
 
 				pos += 4;
 			}
@@ -177,18 +199,12 @@ fn exec_code(program: &mut Vec<i32>) {
 					"invalid input string"
 				);
 
-				*ParameterMutRef
-					::from_pos_mode(pos+1, op_modes.digits(2..3)).unwrap()
-					.deref(program).unwrap()
-				= input_value;
+				*get_param_mutref(program, pos, op_modes, 0) = input_value;
 
 				pos += 2;
 			}
 			OpInstruction::Output => {
-				let output_value = ParameterRef
-					::from_pos_mode(pos+1, op_modes.digits(2..3)).unwrap()
-					.deref(program).unwrap();
-				println!("{:?}", output_value);
+				println!("{:?}", get_param_ref(program, pos, op_modes, 0));
 
 				pos += 2;
 			}
