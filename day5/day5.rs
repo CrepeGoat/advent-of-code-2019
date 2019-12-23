@@ -178,28 +178,16 @@ fn exec_code(program: &mut Vec<i32>) {
 
 		match OpInstruction::from_opcode(op_modes.subdigits(..2).value).unwrap() {
 			OpInstruction::Add => {
-				*ParameterMutRef
-					::from_pos_mode(pos+3, op_modes.subdigits(4..5).value).unwrap()
-					.deref(program).unwrap()
-				= ParameterRef
-					::from_pos_mode(pos+1, op_modes.subdigits(2..3).value).unwrap()
-					.deref(program).unwrap()
-				+ ParameterRef
-					::from_pos_mode(pos+2, op_modes.subdigits(3..4).value).unwrap()
-					.deref(program).unwrap();
+				*get_param_mutref(program, pos, op_modes, 2)
+				= get_param_ref(program, pos, op_modes, 0)
+				+ get_param_ref(program, pos, op_modes, 1);
 
 				pos += 4;
 			}
 			OpInstruction::Multiply => {
-				*ParameterMutRef
-					::from_pos_mode(pos+3, op_modes.subdigits(4..5).value).unwrap()
-					.deref(program).unwrap()
-				= ParameterRef
-					::from_pos_mode(pos+1, op_modes.subdigits(2..3).value).unwrap()
-					.deref(program).unwrap()
-				* ParameterRef
-					::from_pos_mode(pos+2, op_modes.subdigits(3..4).value).unwrap()
-					.deref(program).unwrap();
+				*get_param_mutref(program, pos, op_modes, 2)
+				= get_param_ref(program, pos, op_modes, 0)
+				* get_param_ref(program, pos, op_modes, 1);
 
 				pos += 4;
 			}
@@ -211,18 +199,12 @@ fn exec_code(program: &mut Vec<i32>) {
 					"invalid input string"
 				);
 
-				*ParameterMutRef
-					::from_pos_mode(pos+1, op_modes.subdigits(2..3).value).unwrap()
-					.deref(program).unwrap()
-				= input_value;
+				*get_param_mutref(program, pos, op_modes, 0) = input_value;
 
 				pos += 2;
 			}
 			OpInstruction::Output => {
-				let output_value = ParameterRef
-					::from_pos_mode(pos+1, op_modes.subdigits(2..3).value).unwrap()
-					.deref(program).unwrap();
-				println!("{:?}", output_value);
+				println!("{:?}", get_param_ref(program, pos, op_modes, 0));
 
 				pos += 2;
 			}
