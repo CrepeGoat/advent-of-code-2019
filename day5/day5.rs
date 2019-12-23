@@ -50,43 +50,49 @@ fn parse_code_string(output: &mut Vec<i32>, input: &str) {
 //-----------------------------------------------------------------------------
 
 #[derive(Debug)]
+enum ErrorCode {
+	ParamMode(u32),
+	ProgramPosition(usize),
+	PositionValue(i32),
+}
+
+
+#[derive(Debug)]
 enum ParameterRef {
 	Position(usize),
 	Immediate(usize),
 }
 
 impl ParameterRef {
-	fn from_pos_mode(pos: usize, mode: u32) -> Result<ParameterRef, String> {
+	fn from_pos_mode(pos: usize, mode: u32) -> Result<ParameterRef, ErrorCode> {
 		match mode {
 			0 => Ok(Self::Position(pos)),
 			1 => Ok(Self::Immediate(pos)),
-			m => Err(format!("invalid parameter mode {:?}", m))
+			m => Err(ErrorCode::ParamMode(m))
 		}
 	}
-	fn deref<'a>(&self, program: &'a Vec<i32>) -> Result<&'a i32, String> {
+	fn deref<'a>(&self, program: &'a Vec<i32>) -> Result<&'a i32, ErrorCode> {
 		
-		fn get_ref_value<'b>(program: &'b Vec<i32>, pos: usize, err: &str)
+		fn get_ref_value<'b>(program: &'b Vec<i32>, pos: usize, err: ErrorCode)
 		-> Result<&'b i32, String> {
 			program.get(pos).ok_or(format!("{:?} {:?}", err, pos))
 		}
 
 		match self {
-			Self::Immediate(pos) => get_ref_value(
-				program, *pos, 
-				"invalid program position"
+			Self::Immediate(pos) => program.get(*pos).ok_or(
+				ErrorCode::ProgramPosition(*pos)
 			),
 			Self::Position(pos) => {
-				if let Ok(pos_val) = usize::try_from(*get_ref_value(
-					program, *pos,
-					"invalid program position"
-				)?) {
-					get_ref_value(
-						program, pos_val,
-						"invalid position parameter"
-					)					
-				} else {
-					panic!("program integer cannot be converted to position pointer")
-				}
+				let value = *program.get(*pos).ok_or(
+					ErrorCode::ProgramPosition(*pos)
+				)?;
+				let value_pos = usize::try_from(value).ok().ok_or(
+					ErrorCode::PositionValue(value)
+				)?;
+
+				program.get(value_pos).ok_or(
+					ErrorCode::ProgramPosition(value_pos)
+				)
 			},
 		}
 	}	
