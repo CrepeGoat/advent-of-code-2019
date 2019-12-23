@@ -144,6 +144,32 @@ impl OpInstruction {
 	}
 }
 
+//-----------------------------------------------------------------------------
+
+fn get_param_ref<'a>(
+	program: &'a Vec<i32>, pos: usize, modes: Digits, offset: u8
+) -> &'a i32 {
+	ParameterRef
+	::from_pos_mode(
+		pos+1+usize::from(offset),
+		modes.subdigits(2+offset..3+offset).value
+	).unwrap()
+	.deref(program).unwrap()
+}
+
+fn get_param_mutref<'a>(
+	program: &'a mut Vec<i32>, pos: usize, modes: Digits, offset: u8
+) -> &'a mut i32 {
+	ParameterMutRef
+	::from_pos_mode(
+		pos+1+usize::from(offset),
+		modes.subdigits(2+offset..3+offset).value
+	).unwrap()
+	.deref(program).unwrap()
+}
+
+//-----------------------------------------------------------------------------
+
 fn exec_code(program: &mut Vec<i32>) {
 	let mut pos = 0usize;
 
