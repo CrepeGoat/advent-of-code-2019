@@ -1,5 +1,5 @@
 use std::convert::{TryFrom, TryInto};
-use std::cmp::min;
+use std::cmp::{min, Ordering};
 use std::ops::{RangeBounds, Bound::*};
 use std::vec::Vec;
 
@@ -127,6 +127,8 @@ enum OpInstruction {
 	Multiply,
 	Input,
 	Output,
+	Jump(bool),
+	Compare(Ordering),
 
 	Terminate,
 }
@@ -139,6 +141,10 @@ impl OpInstruction {
 			2u32 => Ok(Self::Multiply),
 			3u32 => Ok(Self::Input),
 			4u32 => Ok(Self::Output),
+			5u32 => Ok(Self::Jump(true)),
+			6u32 => Ok(Self::Jump(false)),
+			7u32 => Ok(Self::Compare(Ordering::Less)),
+			8u32 => Ok(Self::Compare(Ordering::Equal)),
 			n => Err(format!("invalid opcode '{:?}'", n))
 		}
 	}
@@ -207,6 +213,29 @@ fn exec_code(program: &mut Vec<i32>) {
 				println!("{:?}", get_param_ref(program, pos, op_modes, 0));
 
 				pos += 2;
+			}
+			OpInstruction::Jump(trigger) => {
+				if trigger == (0 !=
+					*get_param_ref(program, pos, op_modes, 0)
+				) {
+					pos = usize::try_from(
+						*get_param_ref(program, pos, op_modes, 1)
+					).unwrap();
+				} else {
+					pos += 3;
+				}
+			}
+			OpInstruction::Compare(trigger) => {
+				*get_param_mutref(program, pos, op_modes, 2)
+				= if trigger == get_param_ref(program, pos, op_modes, 0).cmp(
+					get_param_ref(program, pos, op_modes, 1)
+				) {
+					1i32
+				} else {
+					0i32
+				};
+
+				pos += 4;
 			}
 			OpInstruction::Terminate => break,
 		}
