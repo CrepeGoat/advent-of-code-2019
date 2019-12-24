@@ -73,11 +73,6 @@ impl ParameterRef {
 	}
 	fn deref<'a>(&self, program: &'a Vec<i32>) -> Result<&'a i32, ErrorCode> {
 		
-		fn get_ref_value<'b>(program: &'b Vec<i32>, pos: usize, err: ErrorCode)
-		-> Result<&'b i32, String> {
-			program.get(pos).ok_or(format!("{:?} {:?}", err, pos))
-		}
-
 		match self {
 			Self::Immediate(pos) => program.get(*pos).ok_or(
 				ErrorCode::ProgramPosition(*pos)
