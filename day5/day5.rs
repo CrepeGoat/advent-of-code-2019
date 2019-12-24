@@ -219,7 +219,7 @@ fn exec_code(program: &mut Vec<i32>) {
 					*get_param_ref(program, pos, op_modes, 0)
 				) {
 					pos = usize::try_from(
-						*get_param_ref(program, pos, op_modes, 0)
+						*get_param_ref(program, pos, op_modes, 1)
 					).unwrap();
 				} else {
 					pos += 3;
