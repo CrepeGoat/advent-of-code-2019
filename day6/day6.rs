@@ -85,8 +85,10 @@ fn main() {
 	println!("Enter orbit pairs:");
 	read_orbits(&mut uplinks);
 
+	/*
 	println!(
 		"Number of orbits: {:?}",
 		uplinks.values().map(|x| x.depth).sum::<u32>()
 	);
+	*/
 }
