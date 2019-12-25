@@ -1,5 +1,6 @@
 use std::vec::Vec;
 use std::collections::HashMap;
+use std::mem::swap;
 
 
 fn parse_orbit(input: &str) -> Result<(String, String), &str> {
@@ -80,6 +81,42 @@ fn read_orbits(uplinks: &mut HashMap<String, UpLink>) {
 	}
 }
 
+//-----------------------------------------------------------------------------
+
+fn common_ancestor<'a>(
+	uplinks: &'a HashMap<String, UpLink>, node1: String, node2: String
+) -> String {
+	let mut node_ref1 = &node1;
+	let mut node_ref2 = &node2;
+
+	while node_ref1 != node_ref2 {
+		node_ref1 = {
+			let mut uplink1 = uplinks.get(node_ref1).expect(format!(
+				"body {:?} not in orbital graph",
+				node_ref1
+			).as_str());
+			let mut uplink2 = uplinks.get(node_ref2).expect(format!(
+				"body {:?} not in orbital graph",
+				node_ref2
+			).as_str());
+
+			if uplink1.depth < uplink2.depth {
+				swap(&mut node_ref1, &mut node_ref2);
+				swap(&mut uplink1, &mut uplink2);
+			}
+
+			uplink1.parent.as_ref().expect(format!(
+				"no common ancestor between nodes {:?}, {:?}",
+				node1, node2
+			).as_str())
+
+		}
+	}
+	node_ref1.clone()
+}
+
+//-----------------------------------------------------------------------------
+
 fn main() {
 	let mut uplinks = HashMap::<String, UpLink>::new();
 	println!("Enter orbit pairs:");
@@ -91,4 +128,15 @@ fn main() {
 		uplinks.values().map(|x| x.depth).sum::<u32>()
 	);
 	*/
+
+	let ancestor = common_ancestor(
+		&mut uplinks, "SAN".to_string(), "YOU".to_string()
+	);
+	println!("common ancestor: {:?}", ancestor);
+
+	let distance = 
+		uplinks[&"SAN".to_string()].depth
+		+ uplinks[&"YOU".to_string()].depth
+		- 2*(uplinks[&ancestor].depth+1);
+	println!("distance: {:?}", distance);
 }
