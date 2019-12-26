@@ -228,13 +228,9 @@ fn exec_code(program: &mut Vec<i32>) {
 			}
 			OpInstruction::Compare(trigger) => {
 				*get_param_mutref(program, pos, op_modes, 2)
-				= if trigger == get_param_ref(program, pos, op_modes, 0).cmp(
-					get_param_ref(program, pos, op_modes, 1)
-				) {
-					1i32
-				} else {
-					0i32
-				};
+					= (trigger == get_param_ref(program, pos, op_modes, 0).cmp(
+						get_param_ref(program, pos, op_modes, 1)
+					)) as i32;
 
 				pos += 4;
 			}
