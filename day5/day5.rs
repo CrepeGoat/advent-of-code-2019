@@ -177,7 +177,7 @@ impl OpInstruction {
 
 //-----------------------------------------------------------------------------
 
-fn exec_code(program: &mut Vec<i32>) {
+fn exec_program(program: &mut Vec<i32>) {
 	let mut pos = 0usize;
 
 	while pos < program.len() {
@@ -258,5 +258,5 @@ fn main() {
 	parse_code_string(&mut program, &buffer);
 	buffer.clear();
 	
-	exec_code(&mut program);
+	exec_program(&mut program);
 }
