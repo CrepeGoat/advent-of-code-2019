@@ -129,8 +129,10 @@ impl ParameterMutRef {
 
 
 fn get_param_ref<'a>(
-	program: &'a Vec<i32>, pos: usize, modes: Digits, offset: u8
+	program: &'a Vec<i32>, pos: usize, offset: u8
 ) -> &'a i32 {
+	let modes = Digits::from(u32::try_from(program[pos]).unwrap());
+
 	ParameterRef
 	::from_pos_mode(
 		pos+1+usize::from(offset),
@@ -140,8 +142,10 @@ fn get_param_ref<'a>(
 }
 
 fn get_param_mutref<'a>(
-	program: &'a mut Vec<i32>, pos: usize, modes: Digits, offset: u8
+	program: &'a mut Vec<i32>, pos: usize, offset: u8
 ) -> &'a mut i32 {
+	let modes = Digits::from(u32::try_from(program[pos]).unwrap());
+
 	ParameterMutRef
 	::from_pos_mode(
 		pos+1+usize::from(offset),
@@ -165,8 +169,8 @@ enum OpInstruction {
 }
 
 impl OpInstruction {
-	fn from_opcode(opcode: Digits) -> Result<OpInstruction, String> {
-		match opcode.subdigits(..2).into() {
+	fn from_opcode(opcode: u32) -> Result<OpInstruction, String> {
+		match Digits::from(opcode).subdigits(..2).into() {
 			99u32 => Ok(Self::Terminate),
 			1u32 => Ok(Self::Add),
 			2u32 => Ok(Self::Multiply),
@@ -187,20 +191,20 @@ fn exec_program(program: &mut Vec<i32>) {
 	let mut pos = 0usize;
 
 	while pos < program.len() {
-		let op_modes = Digits::from(u32::try_from(program[pos]).unwrap());
+		let op_modes = u32::try_from(program[pos]).unwrap();
 
 		match OpInstruction::from_opcode(op_modes).unwrap() {
 			OpInstruction::Add => {
-				*get_param_mutref(program, pos, op_modes, 2)
-				= get_param_ref(program, pos, op_modes, 0)
-				+ get_param_ref(program, pos, op_modes, 1);
+				*get_param_mutref(program, pos, 2)
+				= get_param_ref(program, pos, 0)
+				+ get_param_ref(program, pos, 1);
 
 				pos += 4;
 			}
 			OpInstruction::Multiply => {
-				*get_param_mutref(program, pos, op_modes, 2)
-				= get_param_ref(program, pos, op_modes, 0)
-				* get_param_ref(program, pos, op_modes, 1);
+				*get_param_mutref(program, pos, 2)
+				= get_param_ref(program, pos, 0)
+				* get_param_ref(program, pos, 1);
 
 				pos += 4;
 			}
@@ -212,30 +216,30 @@ fn exec_program(program: &mut Vec<i32>) {
 					"invalid input string"
 				);
 
-				*get_param_mutref(program, pos, op_modes, 0) = input_value;
+				*get_param_mutref(program, pos, 0) = input_value;
 
 				pos += 2;
 			}
 			OpInstruction::Output => {
-				println!("{:?}", get_param_ref(program, pos, op_modes, 0));
+				println!("{:?}", get_param_ref(program, pos, 0));
 
 				pos += 2;
 			}
 			OpInstruction::Jump(trigger) => {
 				if trigger == (0 !=
-					*get_param_ref(program, pos, op_modes, 0)
+					*get_param_ref(program, pos, 0)
 				) {
 					pos = usize::try_from(
-						*get_param_ref(program, pos, op_modes, 1)
+						*get_param_ref(program, pos, 1)
 					).unwrap();
 				} else {
 					pos += 3;
 				}
 			}
 			OpInstruction::Compare(trigger) => {
-				*get_param_mutref(program, pos, op_modes, 2)
-					= (trigger == get_param_ref(program, pos, op_modes, 0).cmp(
-						get_param_ref(program, pos, op_modes, 1)
+				*get_param_mutref(program, pos, 2)
+					= (trigger == get_param_ref(program, pos, 0).cmp(
+						get_param_ref(program, pos, 1)
 					)) as i32;
 
 				pos += 4;
