@@ -135,8 +135,8 @@ enum OpInstruction {
 }
 
 impl OpInstruction {
-	fn from_opcode(opcode: u32) -> Result<OpInstruction, String> {
-		match opcode {
+	fn from_opcode(opcode: Digits) -> Result<OpInstruction, String> {
+		match opcode.subdigits(..2).value {
 			99u32 => Ok(Self::Terminate),
 			1u32 => Ok(Self::Add),
 			2u32 => Ok(Self::Multiply),
@@ -183,7 +183,7 @@ fn exec_code(program: &mut Vec<i32>) {
 	while pos < program.len() {
 		let op_modes = Digits::new(program[pos].try_into().unwrap());
 
-		match OpInstruction::from_opcode(op_modes.subdigits(..2).value).unwrap() {
+		match OpInstruction::from_opcode(op_modes).unwrap() {
 			OpInstruction::Add => {
 				*get_param_mutref(program, pos, op_modes, 2)
 				= get_param_ref(program, pos, op_modes, 0)
