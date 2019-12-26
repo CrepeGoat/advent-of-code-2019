@@ -99,25 +99,25 @@ enum ParameterMutRef {
 }
 
 impl ParameterMutRef {
-	fn from_pos_mode(pos: usize, mode: u32) -> Result<ParameterMutRef, String> {
+	fn from_pos_mode(pos: usize, mode: u32) -> Result<ParameterMutRef, ErrorCode> {
 		match mode {
 			0 => Ok(Self::Position(pos)),
-			1 => Err("cannot mutably access a parameter in immediate mode".to_string()),
-			m => Err(format!("invalid parameter mode {:?}", m))
+			m => Err(ErrorCode::ParamMode(m))
 		}
 	}
-	fn deref<'a>(&self, program: &'a mut Vec<i32>) -> Result<&'a mut i32, String> {
+	fn deref<'a>(&self, program: &'a mut Vec<i32>) -> Result<&'a mut i32, ErrorCode> {
 		let Self::Position(pos) = self;
 
-		if let Ok(pos_val) = usize::try_from(*program.get(*pos).ok_or(
-			format!("invalid program position {:?}", pos)
-		)?) {
-			program.get_mut(pos_val).ok_or(
-				format!("invalid position parameter {:?}", pos_val)
-			)
-		} else {
-			panic!("program integer cannot be converted to position pointer")
-		}
+		let value = *program.get(*pos).ok_or(
+			ErrorCode::ProgramPosition(*pos)
+		)?;
+		let value_pos = usize::try_from(value).ok().ok_or(
+			ErrorCode::PositionValue(value)
+		)?;
+
+		program.get_mut(value_pos).ok_or(
+			ErrorCode::ProgramPosition(value_pos)
+		)
 	}	
 }
 
