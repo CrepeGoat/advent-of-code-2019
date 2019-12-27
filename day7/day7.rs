@@ -70,10 +70,15 @@ enum ParameterRef {
 }
 
 impl ParameterRef {
-	fn from_pos_mode(pos: usize, mode: u32) -> Result<ParameterRef, ErrorCode> {
+	fn from_pos_mode(pos: usize, op_modes: u32, offset: u8)
+	-> Result<ParameterRef, ErrorCode>
+	{
+		let pointed_pos = pos+1+usize::from(offset);
+		let mode = Digits::from(op_modes).subdigits(2+offset..3+offset).into();
+
 		match mode {
-			0 => Ok(Self::Position(pos)),
-			1 => Ok(Self::Immediate(pos)),
+			0 => Ok(Self::Position(pointed_pos)),
+			1 => Ok(Self::Immediate(pointed_pos)),
 			m => Err(ErrorCode::ParamMode(m))
 		}
 	}
@@ -105,9 +110,14 @@ enum ParameterMutRef {
 }
 
 impl ParameterMutRef {
-	fn from_pos_mode(pos: usize, mode: u32) -> Result<ParameterMutRef, ErrorCode> {
+	fn from_pos_mode(pos: usize, op_modes: u32, offset: u8)
+	-> Result<ParameterMutRef, ErrorCode>
+	{
+		let pointed_pos = pos+1+usize::from(offset);
+		let mode = Digits::from(op_modes).subdigits(2+offset..3+offset).into();
+
 		match mode {
-			0 => Ok(Self::Position(pos)),
+			0 => Ok(Self::Position(pointed_pos)),
 			m => Err(ErrorCode::ParamMode(m))
 		}
 	}
@@ -131,12 +141,8 @@ impl ParameterMutRef {
 fn get_param_ref<'a>(
 	program: &'a Vec<i32>, pos: usize, offset: u8
 ) -> &'a i32 {
-	let modes = Digits::from(u32::try_from(program[pos]).unwrap());
-
-	ParameterRef
-	::from_pos_mode(
-		pos+1+usize::from(offset),
-		modes.subdigits(2+offset..3+offset).into()
+	ParameterRef::from_pos_mode(
+		pos, u32::try_from(program[pos]).unwrap(), offset
 	).unwrap()
 	.deref(program).unwrap()
 }
@@ -144,12 +150,8 @@ fn get_param_ref<'a>(
 fn get_param_mutref<'a>(
 	program: &'a mut Vec<i32>, pos: usize, offset: u8
 ) -> &'a mut i32 {
-	let modes = Digits::from(u32::try_from(program[pos]).unwrap());
-
-	ParameterMutRef
-	::from_pos_mode(
-		pos+1+usize::from(offset),
-		modes.subdigits(2+offset..3+offset).into()
+	ParameterMutRef::from_pos_mode(
+		pos, u32::try_from(program[pos]).unwrap(), offset
 	).unwrap()
 	.deref(program).unwrap()
 }
