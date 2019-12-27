@@ -5,18 +5,12 @@ use std::vec::Vec;
 
 
 #[derive(Debug, Clone, Copy)]
-struct Digits {
-	value: u32
-}
+struct Digits(u32);
 
 impl Digits {
 	const NO_OF_DIGITS: u8 = 9;
 
-	fn new(value: u32) -> Self {
-		Digits{value: value}
-	}
-
-	fn subdigits<R: RangeBounds<u8>>(&self, index: R) -> Digits {
+	pub fn subdigits<R: RangeBounds<u8>>(&self, index: R) -> Self {
 		let lbound = match index.start_bound() {
 			Unbounded => 0,
 			Included(&n) => n,
@@ -28,14 +22,26 @@ impl Digits {
 			Excluded(&n) => min(Self::NO_OF_DIGITS, n),
 		};
 
-		Digits::new(
+		Self::from(
 			if lbound >= ubound {
 				0_u32
 			} else {
-				(self.value / 10_u32.pow(lbound.into()))
+				(self.0 / 10_u32.pow(lbound.into()))
 				% 10_u32.pow((ubound-lbound).into())
 			}
 		)
+	}
+}
+
+impl From<u32> for Digits {
+	fn from(value: u32) -> Self {
+		Self(value)
+	}
+}
+
+impl Into<u32> for Digits {
+	fn into(self) -> u32 {
+		self.0
 	}
 }
 
@@ -99,28 +105,56 @@ enum ParameterMutRef {
 }
 
 impl ParameterMutRef {
-	fn from_pos_mode(pos: usize, mode: u32) -> Result<ParameterMutRef, String> {
+	fn from_pos_mode(pos: usize, mode: u32) -> Result<ParameterMutRef, ErrorCode> {
 		match mode {
 			0 => Ok(Self::Position(pos)),
-			1 => Err("cannot mutably access a parameter in immediate mode".to_string()),
-			m => Err(format!("invalid parameter mode {:?}", m))
+			m => Err(ErrorCode::ParamMode(m))
 		}
 	}
-	fn deref<'a>(&self, program: &'a mut Vec<i32>) -> Result<&'a mut i32, String> {
+	fn deref<'a>(&self, program: &'a mut Vec<i32>) -> Result<&'a mut i32, ErrorCode> {
 		let Self::Position(pos) = self;
 
-		if let Ok(pos_val) = usize::try_from(*program.get(*pos).ok_or(
-			format!("invalid program position {:?}", pos)
-		)?) {
-			program.get_mut(pos_val).ok_or(
-				format!("invalid position parameter {:?}", pos_val)
-			)
-		} else {
-			panic!("program integer cannot be converted to position pointer")
-		}
+		let value = *program.get(*pos).ok_or(
+			ErrorCode::ProgramPosition(*pos)
+		)?;
+		let value_pos = usize::try_from(value).ok().ok_or(
+			ErrorCode::PositionValue(value)
+		)?;
+
+		program.get_mut(value_pos).ok_or(
+			ErrorCode::ProgramPosition(value_pos)
+		)
 	}	
 }
 
+
+fn get_param_ref<'a>(
+	program: &'a Vec<i32>, pos: usize, offset: u8
+) -> &'a i32 {
+	let modes = Digits::from(u32::try_from(program[pos]).unwrap());
+
+	ParameterRef
+	::from_pos_mode(
+		pos+1+usize::from(offset),
+		modes.subdigits(2+offset..3+offset).into()
+	).unwrap()
+	.deref(program).unwrap()
+}
+
+fn get_param_mutref<'a>(
+	program: &'a mut Vec<i32>, pos: usize, offset: u8
+) -> &'a mut i32 {
+	let modes = Digits::from(u32::try_from(program[pos]).unwrap());
+
+	ParameterMutRef
+	::from_pos_mode(
+		pos+1+usize::from(offset),
+		modes.subdigits(2+offset..3+offset).into()
+	).unwrap()
+	.deref(program).unwrap()
+}
+
+//-----------------------------------------------------------------------------
 
 #[derive(Debug)]
 enum OpInstruction {
@@ -136,7 +170,7 @@ enum OpInstruction {
 
 impl OpInstruction {
 	fn from_opcode(opcode: u32) -> Result<OpInstruction, String> {
-		match opcode {
+		match Digits::from(opcode).subdigits(..2).into() {
 			99u32 => Ok(Self::Terminate),
 			1u32 => Ok(Self::Add),
 			2u32 => Ok(Self::Multiply),
@@ -153,48 +187,24 @@ impl OpInstruction {
 
 //-----------------------------------------------------------------------------
 
-fn get_param_ref<'a>(
-	program: &'a Vec<i32>, pos: usize, modes: Digits, offset: u8
-) -> &'a i32 {
-	ParameterRef
-	::from_pos_mode(
-		pos+1+usize::from(offset),
-		modes.subdigits(2+offset..3+offset).value
-	).unwrap()
-	.deref(program).unwrap()
-}
-
-fn get_param_mutref<'a>(
-	program: &'a mut Vec<i32>, pos: usize, modes: Digits, offset: u8
-) -> &'a mut i32 {
-	ParameterMutRef
-	::from_pos_mode(
-		pos+1+usize::from(offset),
-		modes.subdigits(2+offset..3+offset).value
-	).unwrap()
-	.deref(program).unwrap()
-}
-
-//-----------------------------------------------------------------------------
-
-fn exec_code(program: &mut Vec<i32>) {
+fn exec_program(program: &mut Vec<i32>) {
 	let mut pos = 0usize;
 
 	while pos < program.len() {
-		let op_modes = Digits::new(program[pos].try_into().unwrap());
+		let op_modes = u32::try_from(program[pos]).unwrap();
 
-		match OpInstruction::from_opcode(op_modes.subdigits(..2).value).unwrap() {
+		match OpInstruction::from_opcode(op_modes).unwrap() {
 			OpInstruction::Add => {
-				*get_param_mutref(program, pos, op_modes, 2)
-				= get_param_ref(program, pos, op_modes, 0)
-				+ get_param_ref(program, pos, op_modes, 1);
+				*get_param_mutref(program, pos, 2)
+				= get_param_ref(program, pos, 0)
+				+ get_param_ref(program, pos, 1);
 
 				pos += 4;
 			}
 			OpInstruction::Multiply => {
-				*get_param_mutref(program, pos, op_modes, 2)
-				= get_param_ref(program, pos, op_modes, 0)
-				* get_param_ref(program, pos, op_modes, 1);
+				*get_param_mutref(program, pos, 2)
+				= get_param_ref(program, pos, 0)
+				* get_param_ref(program, pos, 1);
 
 				pos += 4;
 			}
@@ -206,35 +216,31 @@ fn exec_code(program: &mut Vec<i32>) {
 					"invalid input string"
 				);
 
-				*get_param_mutref(program, pos, op_modes, 0) = input_value;
+				*get_param_mutref(program, pos, 0) = input_value;
 
 				pos += 2;
 			}
 			OpInstruction::Output => {
-				println!("{:?}", get_param_ref(program, pos, op_modes, 0));
+				println!("{:?}", get_param_ref(program, pos, 0));
 
 				pos += 2;
 			}
 			OpInstruction::Jump(trigger) => {
 				if trigger == (0 !=
-					*get_param_ref(program, pos, op_modes, 0)
+					*get_param_ref(program, pos, 0)
 				) {
 					pos = usize::try_from(
-						*get_param_ref(program, pos, op_modes, 1)
+						*get_param_ref(program, pos, 1)
 					).unwrap();
 				} else {
 					pos += 3;
 				}
 			}
 			OpInstruction::Compare(trigger) => {
-				*get_param_mutref(program, pos, op_modes, 2)
-				= if trigger == get_param_ref(program, pos, op_modes, 0).cmp(
-					get_param_ref(program, pos, op_modes, 1)
-				) {
-					1i32
-				} else {
-					0i32
-				};
+				*get_param_mutref(program, pos, 2)
+					= (trigger == get_param_ref(program, pos, 0).cmp(
+						get_param_ref(program, pos, 1)
+					)) as i32;
 
 				pos += 4;
 			}
@@ -262,5 +268,5 @@ fn main() {
 	parse_code_string(&mut program, &buffer);
 	buffer.clear();
 	
-	exec_code(&mut program);
+	exec_program(&mut program);
 }
