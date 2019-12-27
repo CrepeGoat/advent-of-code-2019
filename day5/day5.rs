@@ -5,18 +5,12 @@ use std::vec::Vec;
 
 
 #[derive(Debug, Clone, Copy)]
-struct Digits {
-	value: u32
-}
+struct Digits(u32);
 
 impl Digits {
 	const NO_OF_DIGITS: u8 = 9;
 
-	fn new(value: u32) -> Self {
-		Digits{value: value}
-	}
-
-	fn subdigits<R: RangeBounds<u8>>(&self, index: R) -> Digits {
+	pub fn subdigits<R: RangeBounds<u8>>(&self, index: R) -> Self {
 		let lbound = match index.start_bound() {
 			Unbounded => 0,
 			Included(&n) => n,
@@ -28,14 +22,26 @@ impl Digits {
 			Excluded(&n) => min(Self::NO_OF_DIGITS, n),
 		};
 
-		Digits::new(
+		Self::from(
 			if lbound >= ubound {
 				0_u32
 			} else {
-				(self.value / 10_u32.pow(lbound.into()))
+				(self.0 / 10_u32.pow(lbound.into()))
 				% 10_u32.pow((ubound-lbound).into())
 			}
 		)
+	}
+}
+
+impl From<u32> for Digits {
+	fn from(value: u32) -> Self {
+		Self(value)
+	}
+}
+
+impl Into<u32> for Digits {
+	fn into(self) -> u32 {
+		self.0
 	}
 }
 
@@ -128,7 +134,7 @@ fn get_param_ref<'a>(
 	ParameterRef
 	::from_pos_mode(
 		pos+1+usize::from(offset),
-		modes.subdigits(2+offset..3+offset).value
+		modes.subdigits(2+offset..3+offset).into()
 	).unwrap()
 	.deref(program).unwrap()
 }
@@ -139,7 +145,7 @@ fn get_param_mutref<'a>(
 	ParameterMutRef
 	::from_pos_mode(
 		pos+1+usize::from(offset),
-		modes.subdigits(2+offset..3+offset).value
+		modes.subdigits(2+offset..3+offset).into()
 	).unwrap()
 	.deref(program).unwrap()
 }
@@ -160,7 +166,7 @@ enum OpInstruction {
 
 impl OpInstruction {
 	fn from_opcode(opcode: Digits) -> Result<OpInstruction, String> {
-		match opcode.subdigits(..2).value {
+		match opcode.subdigits(..2).into() {
 			99u32 => Ok(Self::Terminate),
 			1u32 => Ok(Self::Add),
 			2u32 => Ok(Self::Multiply),
@@ -181,7 +187,7 @@ fn exec_program(program: &mut Vec<i32>) {
 	let mut pos = 0usize;
 
 	while pos < program.len() {
-		let op_modes = Digits::new(program[pos].try_into().unwrap());
+		let op_modes = Digits::from(u32::try_from(program[pos]).unwrap());
 
 		match OpInstruction::from_opcode(op_modes).unwrap() {
 			OpInstruction::Add => {
