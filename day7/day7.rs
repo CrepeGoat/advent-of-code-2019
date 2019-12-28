@@ -273,6 +273,33 @@ fn exec_program(program: Vec<i32>, start_pos: usize) -> YieldStates {
 	YieldStates::Stop
 }
 
+fn exec_program_over_stdio(program: Vec<i32>) {
+	let program_state = YieldStates::new(program);
+	
+	use YieldStates;
+	loop {
+		program_state = match program_state {
+			Start => program_state.execute(),
+			Input => {
+				println!("Enter an input value:");
+				let mut buffer = String::new();
+				std::io::stdin().read_line(&mut buffer).expect("invalid code");
+				let input_value = buffer.trim().parse::<i32>().expect(
+					"invalid input string"
+				);
+
+				program_state.execute(input_value)
+			}
+			Output => {
+				println!("{:?}", program_state.get());
+
+				program_state.execute()
+			}
+			Stop => break,
+		}
+	}
+}
+
 
 
 //------------------------------------------------------------------
@@ -294,5 +321,5 @@ fn main() {
 	parse_code_string(&mut program, &buffer);
 	buffer.clear();
 	
-	exec_program(&mut program);
+	exec_program_over_stdio(program);
 }
