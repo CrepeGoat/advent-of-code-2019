@@ -64,33 +64,24 @@ enum ErrorCode {
 
 
 #[derive(Debug)]
-enum ParameterRef {
-	Position(usize),
-	Immediate(usize),
-}
+struct ParameterRef{op_pos: usize, offset: u8}
 
 impl ParameterRef {
-	fn from_pos_mode(pos: usize, op_modes: u32, offset: u8)
-	-> Result<ParameterRef, ErrorCode>
-	{
-		let pointed_pos = pos+1+usize::from(offset);
-		let mode = Digits::from(op_modes).subdigits(2+offset..3+offset).into();
+	fn deref<'a>(&self, program: &'a Vec<i32>) -> Result<&'a i32, ErrorCode> {
+		let mode: u32 = {
+			let op_value = *program.get(self.op_pos)
+				.ok_or(ErrorCode::ProgramPosition(self.op_pos))?;
+			let op_code: u32 = op_value.try_into()
+				.ok().ok_or(ErrorCode::PositionValue(op_value))?;
+			
+			Digits::from(op_code).subdigits(2+self.offset..3+self.offset).into()
+		};
+		let param_pos = self.op_pos+1+usize::from(self.offset);
 
 		match mode {
-			0 => Ok(Self::Position(pointed_pos)),
-			1 => Ok(Self::Immediate(pointed_pos)),
-			m => Err(ErrorCode::ParamMode(m))
-		}
-	}
-	fn deref<'a>(&self, program: &'a Vec<i32>) -> Result<&'a i32, ErrorCode> {
-		
-		match self {
-			Self::Immediate(pos) => program.get(*pos).ok_or(
-				ErrorCode::ProgramPosition(*pos)
-			),
-			Self::Position(pos) => {
-				let value = *program.get(*pos).ok_or(
-					ErrorCode::ProgramPosition(*pos)
+			0 => {
+				let value = *program.get(param_pos).ok_or(
+					ErrorCode::ProgramPosition(param_pos)
 				)?;
 				let value_pos = usize::try_from(value).ok().ok_or(
 					ErrorCode::PositionValue(value)
@@ -100,60 +91,58 @@ impl ParameterRef {
 					ErrorCode::ProgramPosition(value_pos)
 				)
 			},
+			1 => program.get(param_pos).ok_or(
+				ErrorCode::ProgramPosition(param_pos)
+			),
+			m => Err(ErrorCode::ParamMode(m))
 		}
 	}	
 }
 
 #[derive(Debug)]
-enum ParameterMutRef {
-	Position(usize),
-}
+struct ParameterMutRef{op_pos: usize, offset: u8}
 
 impl ParameterMutRef {
-	fn from_pos_mode(pos: usize, op_modes: u32, offset: u8)
-	-> Result<ParameterMutRef, ErrorCode>
-	{
-		let pointed_pos = pos+1+usize::from(offset);
-		let mode = Digits::from(op_modes).subdigits(2+offset..3+offset).into();
+	fn deref<'a>(&self, program: &'a mut Vec<i32>) -> Result<&'a mut i32, ErrorCode> {
+		let mode: u32 = {
+			let op_value = *program.get(self.op_pos)
+				.ok_or(ErrorCode::ProgramPosition(self.op_pos))?;
+			let op_code: u32 = op_value.try_into()
+				.ok().ok_or(ErrorCode::PositionValue(op_value))?;
+			
+			Digits::from(op_code).subdigits(2+self.offset..3+self.offset).into()
+		};
+		let param_pos = self.op_pos+1+usize::from(self.offset);
 
 		match mode {
-			0 => Ok(Self::Position(pointed_pos)),
+			0 => {
+				let value = *program.get(param_pos).ok_or(
+					ErrorCode::ProgramPosition(param_pos)
+				)?;
+				let value_pos = usize::try_from(value).ok().ok_or(
+					ErrorCode::PositionValue(value)
+				)?;
+
+				program.get_mut(value_pos).ok_or(
+					ErrorCode::ProgramPosition(value_pos)
+				)
+			},
 			m => Err(ErrorCode::ParamMode(m))
 		}
 	}
-	fn deref<'a>(&self, program: &'a mut Vec<i32>) -> Result<&'a mut i32, ErrorCode> {
-		let Self::Position(pos) = self;
-
-		let value = *program.get(*pos).ok_or(
-			ErrorCode::ProgramPosition(*pos)
-		)?;
-		let value_pos = usize::try_from(value).ok().ok_or(
-			ErrorCode::PositionValue(value)
-		)?;
-
-		program.get_mut(value_pos).ok_or(
-			ErrorCode::ProgramPosition(value_pos)
-		)
-	}	
 }
 
 
 fn get_param_ref<'a>(
-	program: &'a Vec<i32>, pos: usize, offset: u8
+	program: &'a Vec<i32>, op_pos: usize, offset: u8
 ) -> &'a i32 {
-	ParameterRef::from_pos_mode(
-		pos, u32::try_from(program[pos]).unwrap(), offset
-	).unwrap()
-	.deref(program).unwrap()
+	ParameterRef{op_pos, offset}.deref(program).unwrap()
 }
 
 fn get_param_mutref<'a>(
-	program: &'a mut Vec<i32>, pos: usize, offset: u8
+	program: &'a mut Vec<i32>, op_pos: usize, offset: u8
 ) -> &'a mut i32 {
-	ParameterMutRef::from_pos_mode(
-		pos, u32::try_from(program[pos]).unwrap(), offset
-	).unwrap()
-	.deref(program).unwrap()
+	ParameterMutRef{op_pos, offset}.deref(program).unwrap()
 }
 
 //-----------------------------------------------------------------------------
