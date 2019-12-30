@@ -64,7 +64,7 @@ enum ErrorCode {
 
 
 #[derive(Debug)]
-struct ParameterRef{op_pos: usize, offset: u8}
+struct ParameterRef{op_pos: usize, param_no: u8}
 
 impl ParameterRef {
 	fn deref<'a>(&self, program: &'a Vec<i32>) -> Result<&'a i32, ErrorCode> {
@@ -74,9 +74,9 @@ impl ParameterRef {
 			let op_code: u32 = op_value.try_into()
 				.ok().ok_or(ErrorCode::PositionValue(op_value))?;
 			
-			Digits::from(op_code).subdigits(2+self.offset..3+self.offset).into()
+			Digits::from(op_code).subdigits(2+self.param_no..3+self.param_no).into()
 		};
-		let param_pos = self.op_pos+1+usize::from(self.offset);
+		let param_pos = self.op_pos+1+usize::from(self.param_no);
 
 		match mode {
 			0 => {
@@ -100,7 +100,7 @@ impl ParameterRef {
 }
 
 #[derive(Debug)]
-struct ParameterMutRef{op_pos: usize, offset: u8}
+struct ParameterMutRef{op_pos: usize, param_no: u8}
 
 impl ParameterMutRef {
 	fn deref<'a>(&self, program: &'a mut Vec<i32>) -> Result<&'a mut i32, ErrorCode> {
@@ -110,9 +110,9 @@ impl ParameterMutRef {
 			let op_code: u32 = op_value.try_into()
 				.ok().ok_or(ErrorCode::PositionValue(op_value))?;
 			
-			Digits::from(op_code).subdigits(2+self.offset..3+self.offset).into()
+			Digits::from(op_code).subdigits(2+self.param_no..3+self.param_no).into()
 		};
-		let param_pos = self.op_pos+1+usize::from(self.offset);
+		let param_pos = self.op_pos+1+usize::from(self.param_no);
 
 		match mode {
 			0 => {
@@ -134,15 +134,15 @@ impl ParameterMutRef {
 
 
 fn get_param_ref<'a>(
-	program: &'a Vec<i32>, op_pos: usize, offset: u8
+	program: &'a Vec<i32>, op_pos: usize, param_no: u8
 ) -> &'a i32 {
-	ParameterRef{op_pos, offset}.deref(program).unwrap()
+	ParameterRef{op_pos, param_no}.deref(program).unwrap()
 }
 
 fn get_param_mutref<'a>(
-	program: &'a mut Vec<i32>, op_pos: usize, offset: u8
+	program: &'a mut Vec<i32>, op_pos: usize, param_no: u8
 ) -> &'a mut i32 {
-	ParameterMutRef{op_pos, offset}.deref(program).unwrap()
+	ParameterMutRef{op_pos, param_no}.deref(program).unwrap()
 }
 
 //-----------------------------------------------------------------------------
@@ -255,13 +255,13 @@ fn exec_program(mut program: Vec<i32>, start_pos: usize) -> YieldStates {
 			OpInstruction::Input => {
 				return YieldStates::Input(YieldInputInner{
 					program, start_pos: pos+2,
-					write_ref: ParameterMutRef{op_pos: pos, offset: 0}
+					write_ref: ParameterMutRef{op_pos: pos, param_no: 0}
 				});
 			}
 			OpInstruction::Output => {
 				return YieldStates::Output(YieldOutputInner{
 					program, start_pos: pos+2,
-					read_ref: ParameterRef{op_pos: pos, offset: 0}
+					read_ref: ParameterRef{op_pos: pos, param_no: 0}
 				});
 			}
 			OpInstruction::Jump(trigger) => {
