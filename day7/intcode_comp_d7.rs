@@ -170,30 +170,30 @@ impl OpInstruction {
 
 //-----------------------------------------------------------------------------
 
-struct YieldStartInner {
+pub struct YieldStartInner {
 	program: Vec<i32>
 }
 
 impl YieldStartInner {
-	fn execute(self) -> YieldStates {
+	pub fn execute(self) -> YieldStates {
 		exec_program(self.program, 0)
 	}
 }
 
-struct YieldInputInner {
+pub struct YieldInputInner {
 	program: Vec<i32>,
 	start_pos: usize,
 	write_ref: ParameterMutRef
 }
 
 impl YieldInputInner {
-	fn execute(mut self, input_value: i32) -> YieldStates {
+	pub fn execute(mut self, input_value: i32) -> YieldStates {
 		*self.write_ref.deref(&mut self.program).unwrap() = input_value;
 		exec_program(self.program, self.start_pos)
 	}
 }
 
-struct YieldOutputInner {
+pub struct YieldOutputInner {
 	program: Vec<i32>,
 	start_pos: usize,
 	read_ref: ParameterRef
@@ -203,13 +203,13 @@ impl YieldOutputInner {
 	fn get<'a>(&'a self) -> &'a i32 {
 		self.read_ref.deref(&self.program).unwrap()
 	}
-	fn execute(self) -> YieldStates {
+	pub fn execute(self) -> YieldStates {
 		exec_program(self.program, self.start_pos)
 	}
 }
 
 
-enum YieldStates {
+pub enum YieldStates {
 	Start(YieldStartInner),
 	Input(YieldInputInner),
 	Output(YieldOutputInner),
@@ -217,7 +217,7 @@ enum YieldStates {
 }
 
 impl YieldStates {
-	fn new(program: Vec<i32>) -> Self {
+	pub fn new(program: Vec<i32>) -> Self {
 		Self::Start(YieldStartInner{program: program})
 	}
 }
@@ -284,7 +284,7 @@ fn exec_program(mut program: Vec<i32>, start_pos: usize) -> YieldStates {
 	YieldStates::Stop
 }
 
-fn exec_program_over_stdio(program: Vec<i32>) {
+pub fn exec_program_over_stdio(program: Vec<i32>) {
 	let mut program_state = YieldStates::new(program);
 	
 	use YieldStates::*;
@@ -314,14 +314,14 @@ fn exec_program_over_stdio(program: Vec<i32>) {
 
 //------------------------------------------------------------------
 
-fn parse_code_string(output: &mut Vec<i32>, input: &str) {
+pub fn parse_code_string(output: &mut Vec<i32>, input: &str) {
 	for word in input.split(",") {
 		output.push(word.trim().parse::<i32>().expect("invalid input string"));
 	}
 }
 
 
-fn print_code(code: &Vec<i32>) {
+pub fn print_code(code: &Vec<i32>) {
 	let iter = code.iter();
 
 	for ch in iter {
