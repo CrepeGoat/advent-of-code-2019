@@ -178,35 +178,38 @@ impl OpInstruction {
 
 //-----------------------------------------------------------------------------
 
-enum YieldStates {
-	Start{program: Vec<i32>},
-	Input{program: Vec<i32>, start_pos: usize, write_ref: ParameterMutRef},
-	Output{program: Vec<i32>, start_pos: usize, read_ref: ParameterRef},
-	Stop,
+struct YieldStartInner {
+	program: Vec<i32>
 }
 
-impl YieldStates {
-	fn new(program: Vec<i32>) -> Self {
-		Self::Start{program: program}
-	}
-}
-
-impl YieldStates::Start {
+impl YieldStartInner {
 	fn execute(self) -> YieldStates {
 		exec_program(self.program, 0)
 	}
 }
 
-impl YieldStates::Input {
-	fn execute(self, input_value: i32) -> YieldStates {
-		*self.write_ref.deref(self.program).unwrap() = input_value;
+struct YieldInputInner {
+	program: Vec<i32>,
+	start_pos: usize,
+	write_ref: ParameterMutRef
+}
+
+impl YieldInputInner {
+	fn execute(mut self, input_value: i32) -> YieldStates {
+		*self.write_ref.deref(&mut self.program).unwrap() = input_value;
 		exec_program(self.program, self.start_pos)
 	}
 }
 
-impl YieldStates::Output {
+struct YieldOutputInner {
+	program: Vec<i32>,
+	start_pos: usize,
+	read_ref: ParameterRef
+}
+
+impl YieldOutputInner {
 	fn get<'a>(&'a self) -> &'a i32 {
-		self.read_ref.deref(self.program).unwrap()
+		self.read_ref.deref(&self.program).unwrap()
 	}
 	fn execute(self) -> YieldStates {
 		exec_program(self.program, self.start_pos)
@@ -214,7 +217,21 @@ impl YieldStates::Output {
 }
 
 
-fn exec_program(program: Vec<i32>, start_pos: usize) -> YieldStates {
+enum YieldStates {
+	Start(YieldStartInner),
+	Input(YieldInputInner),
+	Output(YieldOutputInner),
+	Stop,
+}
+
+impl YieldStates {
+	fn new(program: Vec<i32>) -> Self {
+		Self::Start(YieldStartInner{program: program})
+	}
+}
+
+
+fn exec_program(mut program: Vec<i32>, start_pos: usize) -> YieldStates {
 	let mut pos = start_pos;
 
 	while pos < program.len() {
@@ -236,16 +253,16 @@ fn exec_program(program: Vec<i32>, start_pos: usize) -> YieldStates {
 				pos += 4;
 			}
 			OpInstruction::Input => {
-				return YieldStates::Input{
+				return YieldStates::Input(YieldInputInner{
 					program, start_pos: pos+2,
 					write_ref: ParameterMutRef{op_pos: pos, offset: 0}
-				};
+				});
 			}
 			OpInstruction::Output => {
-				return YieldStates::Output{
+				return YieldStates::Output(YieldOutputInner{
 					program, start_pos: pos+2,
 					read_ref: ParameterRef{op_pos: pos, offset: 0}
-				};
+				});
 			}
 			OpInstruction::Jump(trigger) => {
 				if trigger == (0 !=
@@ -274,13 +291,13 @@ fn exec_program(program: Vec<i32>, start_pos: usize) -> YieldStates {
 }
 
 fn exec_program_over_stdio(program: Vec<i32>) {
-	let program_state = YieldStates::new(program);
+	let mut program_state = YieldStates::new(program);
 	
-	use YieldStates;
+	use YieldStates::*;
 	loop {
 		program_state = match program_state {
-			Start => program_state.execute(),
-			Input => {
+			Start(process) => process.execute(),
+			Input(process) => {
 				println!("Enter an input value:");
 				let mut buffer = String::new();
 				std::io::stdin().read_line(&mut buffer).expect("invalid code");
@@ -288,12 +305,12 @@ fn exec_program_over_stdio(program: Vec<i32>) {
 					"invalid input string"
 				);
 
-				program_state.execute(input_value)
+				process.execute(input_value)
 			}
-			Output => {
-				println!("{:?}", program_state.get());
+			Output(process) => {
+				println!("{:?}", process.get());
 
-				program_state.execute()
+				process.execute()
 			}
 			Stop => break,
 		}
