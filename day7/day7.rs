@@ -236,21 +236,16 @@ fn exec_program(program: Vec<i32>, start_pos: usize) -> YieldStates {
 				pos += 4;
 			}
 			OpInstruction::Input => {
-				println!("Enter in an input value");
-				let mut buffer = String::new();
-				std::io::stdin().read_line(&mut buffer).expect("invalid code");
-				let input_value = buffer.trim().parse::<i32>().expect(
-					"invalid input string"
-				);
-
-				*get_param_mutref(&mut program, pos, 0) = input_value;
-
-				pos += 2;
+				return YieldStates::Input{
+					program, start_pos: pos+2,
+					write_ref: ParameterMutRef{op_pos: pos, offset: 0}
+				};
 			}
 			OpInstruction::Output => {
-				println!("{:?}", get_param_ref(&program, pos, 0));
-
-				pos += 2;
+				return YieldStates::Output{
+					program, start_pos: pos+2,
+					read_ref: ParameterRef{op_pos: pos, offset: 0}
+				};
 			}
 			OpInstruction::Jump(trigger) => {
 				if trigger == (0 !=
@@ -271,7 +266,7 @@ fn exec_program(program: Vec<i32>, start_pos: usize) -> YieldStates {
 
 				pos += 4;
 			}
-			OpInstruction::Terminate => break,
+			OpInstruction::Terminate => return YieldStates::Stop,
 		}
 	}
 
