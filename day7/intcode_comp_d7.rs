@@ -47,14 +47,6 @@ impl Into<u32> for Digits {
 
 //-----------------------------------------------------------------------------
 
-fn parse_code_string(output: &mut Vec<i32>, input: &str) {
-	for word in input.split(",") {
-		output.push(word.trim().parse::<i32>().expect("invalid input string"));
-	}
-}
-
-//-----------------------------------------------------------------------------
-
 #[derive(Debug)]
 enum ErrorCode {
 	ParamMode(u32),  // parameter mode is invalid
@@ -231,6 +223,8 @@ impl YieldStates {
 }
 
 
+//-----------------------------------------------------------------------------
+
 fn exec_program(mut program: Vec<i32>, start_pos: usize) -> YieldStates {
 	let mut pos = start_pos;
 
@@ -318,8 +312,15 @@ fn exec_program_over_stdio(program: Vec<i32>) {
 }
 
 
-
 //------------------------------------------------------------------
+
+fn parse_code_string(output: &mut Vec<i32>, input: &str) {
+	for word in input.split(",") {
+		output.push(word.trim().parse::<i32>().expect("invalid input string"));
+	}
+}
+
+
 fn print_code(code: &Vec<i32>) {
 	let iter = code.iter();
 
