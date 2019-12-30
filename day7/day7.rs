@@ -57,9 +57,9 @@ fn parse_code_string(output: &mut Vec<i32>, input: &str) {
 
 #[derive(Debug)]
 enum ErrorCode {
-	ParamMode(u32),
-	ProgramPosition(usize),
-	PositionValue(i32),
+	ParamMode(u32),  // parameter mode is invalid
+	ProgramPosition(usize),  // invalid position in program
+	PositionValue(i32),  // invalid value at position in program
 }
 
 
