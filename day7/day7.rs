@@ -178,24 +178,60 @@ impl OpInstruction {
 
 //-----------------------------------------------------------------------------
 
-fn exec_program(program: &mut Vec<i32>) {
-	let mut pos = 0usize;
+enum YieldStates {
+	Start{program: Vec<i32>},
+	Input{program: Vec<i32>, start_pos: usize, write_ref: ParameterMutRef},
+	Output{program: Vec<i32>, start_pos: usize, read_ref: ParameterRef},
+	Stop,
+}
+
+impl YieldStates {
+	fn new(program: Vec<i32>) -> Self {
+		Self::Start{program: program}
+	}
+}
+
+impl YieldStates::Start {
+	fn execute(self) -> YieldStates {
+		exec_program(self.program, 0)
+	}
+}
+
+impl YieldStates::Input {
+	fn execute(self, input_value: i32) -> YieldStates {
+		*self.write_ref.deref(self.program).unwrap() = input_value;
+		exec_program(self.program, self.start_pos)
+	}
+}
+
+impl YieldStates::Output {
+	fn get<'a>(&'a self) -> &'a i32 {
+		self.read_ref.deref(self.program).unwrap()
+	}
+	fn execute(self) -> YieldStates {
+		exec_program(self.program, self.start_pos)
+	}
+}
+
+
+fn exec_program(program: Vec<i32>, start_pos: usize) -> YieldStates {
+	let mut pos = start_pos;
 
 	while pos < program.len() {
 		let op_modes = u32::try_from(program[pos]).unwrap();
 
 		match OpInstruction::from_opcode(op_modes).unwrap() {
 			OpInstruction::Add => {
-				*get_param_mutref(program, pos, 2)
-				= get_param_ref(program, pos, 0)
-				+ get_param_ref(program, pos, 1);
+				*get_param_mutref(&mut program, pos, 2)
+				= get_param_ref(&program, pos, 0)
+				+ get_param_ref(&program, pos, 1);
 
 				pos += 4;
 			}
 			OpInstruction::Multiply => {
-				*get_param_mutref(program, pos, 2)
-				= get_param_ref(program, pos, 0)
-				* get_param_ref(program, pos, 1);
+				*get_param_mutref(&mut program, pos, 2)
+				= get_param_ref(&program, pos, 0)
+				* get_param_ref(&program, pos, 1);
 
 				pos += 4;
 			}
@@ -207,30 +243,30 @@ fn exec_program(program: &mut Vec<i32>) {
 					"invalid input string"
 				);
 
-				*get_param_mutref(program, pos, 0) = input_value;
+				*get_param_mutref(&mut program, pos, 0) = input_value;
 
 				pos += 2;
 			}
 			OpInstruction::Output => {
-				println!("{:?}", get_param_ref(program, pos, 0));
+				println!("{:?}", get_param_ref(&program, pos, 0));
 
 				pos += 2;
 			}
 			OpInstruction::Jump(trigger) => {
 				if trigger == (0 !=
-					*get_param_ref(program, pos, 0)
+					*get_param_ref(&program, pos, 0)
 				) {
 					pos = usize::try_from(
-						*get_param_ref(program, pos, 1)
+						*get_param_ref(&program, pos, 1)
 					).unwrap();
 				} else {
 					pos += 3;
 				}
 			}
 			OpInstruction::Compare(trigger) => {
-				*get_param_mutref(program, pos, 2)
-					= (trigger == get_param_ref(program, pos, 0).cmp(
-						get_param_ref(program, pos, 1)
+				*get_param_mutref(&mut program, pos, 2)
+					= (trigger == get_param_ref(&program, pos, 0).cmp(
+						get_param_ref(&program, pos, 1)
 					)) as i32;
 
 				pos += 4;
@@ -238,7 +274,11 @@ fn exec_program(program: &mut Vec<i32>) {
 			OpInstruction::Terminate => break,
 		}
 	}
+
+	YieldStates::Stop
 }
+
+
 
 //------------------------------------------------------------------
 fn print_code(code: &Vec<i32>) {
