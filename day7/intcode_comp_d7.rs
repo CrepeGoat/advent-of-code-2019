@@ -287,7 +287,7 @@ fn exec_program(mut program: Vec<i32>, start_pos: usize) -> YieldStates {
 pub fn exec_program_over_stdio(program: Vec<i32>) {
 	let mut program_state = YieldStates::new(program);
 	
-	use YieldStates::*;
+	use self::YieldStates::*;
 	loop {
 		program_state = match program_state {
 			Start(process) => process.execute(),

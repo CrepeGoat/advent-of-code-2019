@@ -1,3 +1,6 @@
+mod intcode_comp_d7;
+use intcode_comp_d7::*;
+
 use std::vec::Vec;
 
 
@@ -9,5 +12,5 @@ fn main() {
 	parse_code_string(&mut program, &buffer);
 	buffer.clear();
 	
-	exec_program_over_stdio(program);
+	intcode_comp_d7::exec_program_over_stdio(program);
 }
