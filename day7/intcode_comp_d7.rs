@@ -5,7 +5,7 @@ use std::vec::Vec;
 
 
 #[derive(Debug, Clone, Copy)]
-struct Digits(u32);
+struct Digits(i32);
 
 impl Digits {
 	const NO_OF_DIGITS: u8 = 9;
@@ -24,23 +24,23 @@ impl Digits {
 
 		Self::from(
 			if lbound >= ubound {
-				0_u32
+				0_i32
 			} else {
-				(self.0 / 10_u32.pow(lbound.into()))
-				% 10_u32.pow((ubound-lbound).into())
+				(self.0 / 10_i32.pow(lbound.into()))
+				% 10_i32.pow((ubound-lbound).into())
 			}
 		)
 	}
 }
 
-impl From<u32> for Digits {
-	fn from(value: u32) -> Self {
+impl From<i32> for Digits {
+	fn from(value: i32) -> Self {
 		Self(value)
 	}
 }
 
-impl Into<u32> for Digits {
-	fn into(self) -> u32 {
+impl Into<i32> for Digits {
+	fn into(self) -> i32 {
 		self.0
 	}
 }
@@ -49,7 +49,7 @@ impl Into<u32> for Digits {
 
 #[derive(Debug)]
 enum ErrorCode {
-	ParamMode(u32),  // parameter mode is invalid
+	ParamMode(i32),  // parameter mode is invalid
 	ProgramPosition(usize),  // invalid position in program
 	PositionValue(i32),  // invalid value at position in program
 }
@@ -60,13 +60,11 @@ struct ParameterRef{op_pos: usize, param_no: u8}
 
 impl ParameterRef {
 	fn deref<'a>(&self, program: &'a Vec<i32>) -> Result<&'a i32, ErrorCode> {
-		let mode: u32 = {
+		let mode: i32 = {
 			let op_value = *program.get(self.op_pos)
 				.ok_or(ErrorCode::ProgramPosition(self.op_pos))?;
-			let op_code: u32 = op_value.try_into()
-				.ok().ok_or(ErrorCode::PositionValue(op_value))?;
 			
-			Digits::from(op_code).subdigits(2+self.param_no..3+self.param_no).into()
+			Digits::from(op_value).subdigits(2+self.param_no..3+self.param_no).into()
 		};
 		let param_pos = self.op_pos+1+usize::from(self.param_no);
 
@@ -96,13 +94,11 @@ struct ParameterMutRef{op_pos: usize, param_no: u8}
 
 impl ParameterMutRef {
 	fn deref<'a>(&self, program: &'a mut Vec<i32>) -> Result<&'a mut i32, ErrorCode> {
-		let mode: u32 = {
+		let mode: i32 = {
 			let op_value = *program.get(self.op_pos)
 				.ok_or(ErrorCode::ProgramPosition(self.op_pos))?;
-			let op_code: u32 = op_value.try_into()
-				.ok().ok_or(ErrorCode::PositionValue(op_value))?;
 			
-			Digits::from(op_code).subdigits(2+self.param_no..3+self.param_no).into()
+			Digits::from(op_value).subdigits(2+self.param_no..3+self.param_no).into()
 		};
 		let param_pos = self.op_pos+1+usize::from(self.param_no);
 
@@ -152,17 +148,17 @@ enum OpInstruction {
 }
 
 impl OpInstruction {
-	fn from_opcode(opcode: u32) -> Result<OpInstruction, String> {
+	fn from_opcode(opcode: i32) -> Result<OpInstruction, String> {
 		match Digits::from(opcode).subdigits(..2).into() {
-			99u32 => Ok(Self::Terminate),
-			1u32 => Ok(Self::Add),
-			2u32 => Ok(Self::Multiply),
-			3u32 => Ok(Self::Input),
-			4u32 => Ok(Self::Output),
-			5u32 => Ok(Self::Jump(true)),
-			6u32 => Ok(Self::Jump(false)),
-			7u32 => Ok(Self::Compare(Ordering::Less)),
-			8u32 => Ok(Self::Compare(Ordering::Equal)),
+			99i32 => Ok(Self::Terminate),
+			1i32 => Ok(Self::Add),
+			2i32 => Ok(Self::Multiply),
+			3i32 => Ok(Self::Input),
+			4i32 => Ok(Self::Output),
+			5i32 => Ok(Self::Jump(true)),
+			6i32 => Ok(Self::Jump(false)),
+			7i32 => Ok(Self::Compare(Ordering::Less)),
+			8i32 => Ok(Self::Compare(Ordering::Equal)),
 			n => Err(format!("invalid opcode '{:?}'", n))
 		}
 	}
@@ -229,7 +225,7 @@ fn exec_program(mut program: Vec<i32>, start_pos: usize) -> YieldStates {
 	let mut pos = start_pos;
 
 	while pos < program.len() {
-		let op_modes = u32::try_from(program[pos]).unwrap();
+		let op_modes = program[pos];
 
 		match OpInstruction::from_opcode(op_modes).unwrap() {
 			OpInstruction::Add => {
