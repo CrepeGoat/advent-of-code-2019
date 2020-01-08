@@ -167,11 +167,11 @@ impl OpInstruction {
 
 //-----------------------------------------------------------------------------
 
-pub struct YieldStartInner {
+pub struct YieldPauseInner {
 	program: Vec<i32>
 }
 
-impl YieldStartInner {
+impl YieldPauseInner {
 	pub fn execute(self) -> Result<YieldStates, ErrorCode> {
 		exec_program(self.program, 0)
 	}
@@ -197,7 +197,7 @@ pub struct YieldOutputInner {
 }
 
 impl YieldOutputInner {
-	fn get<'a>(&'a self) -> &'a i32 {
+	pub fn get<'a>(&'a self) -> &'a i32 {
 		self.read_ref.deref(&self.program).unwrap()
 	}
 	pub fn execute(self) -> Result<YieldStates, ErrorCode> {
@@ -207,7 +207,7 @@ impl YieldOutputInner {
 
 
 pub enum YieldStates {
-	Start(YieldStartInner),
+	Pause(YieldPauseInner),
 	Input(YieldInputInner),
 	Output(YieldOutputInner),
 	Stop,
@@ -215,7 +215,7 @@ pub enum YieldStates {
 
 impl YieldStates {
 	pub fn new(program: Vec<i32>) -> Self {
-		Self::Start(YieldStartInner{program: program})
+		Self::Pause(YieldPauseInner{program: program})
 	}
 }
 
@@ -289,7 +289,7 @@ pub fn exec_program_over_stdio(program: Vec<i32>) {
 	use self::YieldStates::*;
 	loop {
 		program_state = match program_state.unwrap() {
-			Start(process) => process.execute(),
+			Pause(process) => process.execute(),
 			Input(process) => {
 				println!("Enter an input value:");
 				let mut buffer = String::new();
