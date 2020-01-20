@@ -1,6 +1,7 @@
 mod intcode_comp_d7;
 use intcode_comp_d7::*;
 
+use std::mem::swap;
 use std::vec::Vec;
 use std::iter::Iterator;
 
@@ -36,6 +37,38 @@ where ITER: Iterator<Item = u8>
 	}
 
 	last_output
+}
+
+
+//-----------------------------------------------------------------------------
+
+struct Permutation<n: usize> {
+	perm: mut [T; n],
+}
+
+impl Iterator for Permutation<n: usize> {
+	type Item = &[T; n];
+
+	pub fn next(&mut self) -> Option<Self::Item> {
+		let cycle_count = self.count / Self::n;
+		let cycle_pos = self.count % Self::n;
+
+		let i_switch = if cycle_count % 2 == 0 {
+			cycle_pos % (Self::n - 1)
+		} else {
+			(Self::n - 1) - (cycle_pos % (Self::n - 1))
+		}
+
+		swap(&self.perm[i_switch], &self.perm[i_switch+1])
+		self.count += 1;
+		
+	}
+}
+
+
+
+fn find_best_phases(program: Vec<i32>) -> {
+
 }
 
 
