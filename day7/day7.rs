@@ -39,6 +39,24 @@ where ITER: Iterator<Item = u8>
 }
 
 
+//-----------------------------------------------------------------------------
+
+trait TieredCounters<N> {
+	fn increment(&mut self) -> N;
+}
+
+
+struct TierCounter<T, U>(T, TieredCounters<N>);
+
+impl<T, U> TieredCounters<N> for TierCounter<T, U> {
+	fn increment(&mut self) -> N {
+
+	}
+}
+
+
+//-----------------------------------------------------------------------------
+
 fn main() {
 	println!("Enter program code below:");
 	let mut program = Vec::<i32>::new();
