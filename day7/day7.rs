@@ -3,6 +3,7 @@ use intcode_comp_d7::*;
 
 use std::vec::Vec;
 use std::iter::Iterator;
+use std::default::Default;
 
 
 fn run_amplifier(program: Vec<i32>, phase: u8, input_signal: i32) -> i32 {
@@ -38,6 +39,40 @@ where ITER: Iterator<Item = u8>
 	last_output
 }
 
+
+//-----------------------------------------------------------------------------
+
+trait TieredCounters<N> {
+	const size: usize;
+	fn increment(&mut self) -> N;
+}
+
+
+struct EmptyCounter();
+struct TierCounter<T, U: TieredCounters<T>>(T, const T, U);
+
+impl<T: Default> TieredCounters<T> for EmptyCounter {
+	const size: usize = 0usize;
+	fn increment(&mut self) -> T {T::default()}
+}
+
+impl<T, U: TieredCounters<T>, n: T> TieredCounters<T> for TierCounter<T, U> {
+	const size: usize = 1+U::size;
+	fn increment(&mut self) -> T {
+		self.0 += self.2.increment();
+		self.0 %= self.1
+	}
+}
+
+
+type OneSlotCounter = TierCounter<u8, EmptyCounter, 5>;
+type TwoSlotCounter = TierCounter<u8, OneSlotCounter, 5>;
+type ThreeSlotCounter = TierCounter<u8, TwoSlotCounter, 5>;
+type FourSlotCounter = TierCounter<u8, ThreeSlotCounter, 5>;
+type FiveSlotCounter = TierCounter<u8, FourSlotCounter, 5>;
+
+
+//-----------------------------------------------------------------------------
 
 fn main() {
 	println!("Enter program code below:");
